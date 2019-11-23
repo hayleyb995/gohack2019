@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -22,6 +23,7 @@ enum STATE {
 
 public class DrawingImageView extends ImageView {
 
+    private Button readyButton;
     private PointF point;
     int closingPolygonPointIndex;
     STATE currentState = STATE.BOUNDARY_BUILDING;
@@ -122,6 +124,7 @@ public class DrawingImageView extends ImageView {
                                 toast.show();
 
                                 currentState = STATE.STABLE;
+                                readyButton.setEnabled(true);
                             }
                             invalidate();
                         }
@@ -361,5 +364,33 @@ public class DrawingImageView extends ImageView {
         }
 
         return null;
+    }
+
+    public void setReadyButton(Button button){
+        this.readyButton = button;
+    }
+
+    public List<PolyLine> getPolyLines() {
+        List<PolyLine> polyLines = new ArrayList<>();
+        if (outline.size() > 2) {
+            for (int i = 0; i <= outline.size() - 2; i++) {
+                Coordinate startingPoint = new Coordinate(outline.get(i).x, outline.get(i).y);
+                Coordinate endingPoint = new Coordinate(outline.get(i + 1).x, outline.get(i + 1).y);
+                PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, PolyLine.Material.CONCRETE);
+                polyLines.add(polyLine);
+            }
+        }
+        for(int i = 0; i < polygons.size(); i++){
+            List<PointF> polygonOutline = polygons.get(0);
+            if (polygonOutline.size() > 2) {
+                for (int j = 0; j <= polygonOutline.size() - 2; j++) {
+                    Coordinate startingPoint = new Coordinate(polygonOutline.get(j).x, polygonOutline.get(i).y);
+                    Coordinate endingPoint = new Coordinate(polygonOutline.get(i + 1).x, polygonOutline.get(i + 1).y);
+                    PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, PolyLine.Material.CONCRETE);
+                    polyLines.add(polyLine);
+                }
+            }
+        }
+        return polyLines;
     }
 }
