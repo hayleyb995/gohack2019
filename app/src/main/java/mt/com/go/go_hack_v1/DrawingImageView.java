@@ -260,28 +260,6 @@ public class DrawingImageView extends ImageView {
 
     }
 
-//    private boolean isPointOnPolygonOutline(float x, float y) {
-//
-//        if (points.size() < 3) {
-//            return false;
-//        }
-//
-//        int i;
-//        int j;
-//        boolean result = false;
-//        for (i = 0; i < closingPolygonPointIndex - 1; i++) {
-//
-//            float gradient = (points.get(i + 1).y - points.get(i).y) / (points.get(i + 1).x - points.get(i).x);
-//            float intercept = points.get(i).y - (gradient * points.get(i).x);
-//
-//            if (y == (gradient * x) + intercept) {
-//                return true;
-//            }
-//        }
-//        return false;
-//
-//    }
-
     private boolean isPointOnPolygonOutline(float x, float y) {
 
         if (outline.size() < 3) {
@@ -312,7 +290,6 @@ public class DrawingImageView extends ImageView {
         return radius >= dist;
     }
 
-
     private PointF getPointOnPolygonOutline(float x, float y) {
         if (outline.size() < 3) { // boundary is a straight line or single point
             return null;
@@ -331,62 +308,31 @@ public class DrawingImageView extends ImageView {
             float x3 = x;
             float y3 = y * (-1);
 
+            float intersectionX;
+            float intersectionY;
+
             if (circleIntersectsLine(a, b, c, x3, y3, 50)) {
                 //find coordinate of interest
-                // line 1
-                float m1 = ((y2 - y1) / (x2 - x1));
-                float c1 = y1 - (m1 * x1);
+                if (x1 != x2 && y1 != y2) {
+                    // line 1
+                    float m1 = ((y2 - y1) / (x2 - x1));
+                    float c1 = y1 - (m1 * x1);
 
-                // line 2
-                float m2 = -1 / m1;
-                float c2 = y3 - (m2 * x3);
+                    // line 2
+                    float m2 = -1 / m1;
+                    float c2 = y3 - (m2 * x3);
 
-                // points of intersection of line 1 and line 2
-                float intersectionX = ((c2 - c1) / (m1-m2));
-                float intersectionY = ((m1 * intersectionX) + c1)*(-1);
-
-                return new PointF(intersectionX, intersectionY);
-            }
-        }
-
-        return null;
-    }
-
-    private PointF getPointOnPolygonOutlineOld(float x, float y) {
-
-        if (outline.size() < 3) {
-            return null;
-        }
-
-        for (int i = 0; i < outline.size() - 1; i++) {
-            float x1 = outline.get(i).x;
-            float y1 = outline.get(i).y;
-            float x2 = outline.get(i + 1).x;
-            float y2 = outline.get(i + 1).y;
-
-            float a = y1 - y2;
-            float b = x2 - x1;
-            float c = ((x1 - x2) * y1) + ((y2 - y1) * x1);
-
-            if (circleIntersectsLine(a, b, c, x, y, 15)) {
-
-                //find coordinate of interest
-                float gradient1 = ((y2-y1)/(x2-x1));
-                float intercept1 = y1-(gradient1*x1);
-
-
-
-                List<PointF> currentPolygon = polygons.get(polygons.size() - 1);
-                x1 =  currentPolygon.get(currentPolygon.size()-1).x;
-                y1 = (currentPolygon.get(currentPolygon.size()-1).y)*(-1);
-                x2 = x;
-                y2 = y*(-1);
-                float gradient2 = ((y2-y1)/(x2-x1));
-                float intercept2 = y1-(gradient1*x1);
-
-                float intersectionX = ((intercept2-intercept1)/(gradient1-gradient2));
-                float intersectionY = ((gradient1*intersectionX)+intercept1)*(-1);
-
+                    // points of intersection of line 1 and line 2
+                    intersectionX = ((c2 - c1) / (m1-m2));
+                    intersectionY = ((m1 * intersectionX) + c1);
+                } else if (y1 == y2) {
+                    intersectionX = x3;
+                    intersectionY = y1;
+                } else { // x1 == x2
+                    intersectionX = x1;
+                    intersectionY = y3;
+                }
+                intersectionY *= (-1); //verse y mapping;
 
                 return new PointF(intersectionX, intersectionY);
             }
@@ -394,5 +340,4 @@ public class DrawingImageView extends ImageView {
 
         return null;
     }
-
 }
