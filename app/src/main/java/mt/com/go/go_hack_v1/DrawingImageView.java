@@ -13,11 +13,17 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+enum STATE {
+    BOUNDARY_BUILDING,
+    STABLE,
+    WALLS_BUILDING
+}
+
 public class DrawingImageView extends ImageView {
 
     private PointF point;
     int closingPolygonPointIndex;
-    int currentState;
+    STATE currentState;
     private Paint paint = new Paint();
     private List<PointF> outline = new ArrayList<>();
     private List<List<PointF>> polygons = new ArrayList<>();
@@ -47,43 +53,29 @@ public class DrawingImageView extends ImageView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-//        float x = Math.round((float) Math.floor(event.getX()) / CELL_INCREMENT) * CELL_INCREMENT;
-//        float y = Math.round((float) Math.floor(event.getY()) / CELL_INCREMENT) * CELL_INCREMENT;
-
         float x = event.getX();
         float y = event.getY();
 
         switch (currentState) {
-            case 0:
+            case BOUNDARY_BUILDING:
                 x = Math.round((float) Math.floor(event.getX()) / CELL_INCREMENT) * CELL_INCREMENT;
                 y = Math.round((float) Math.floor(event.getY()) / CELL_INCREMENT) * CELL_INCREMENT;
                 break;
-            case 1:
+            case STABLE: // will start building room (first point on room poligon)
                 // approximate x and y to be on the point collienear to the nearest line
-            PointF intersection = getPointOnPolygonOutline(x, y);
-            if(intersection != null) {
-                x = intersection.x;
-                y = intersection.y;
-            }
-
-//                float tempX = Math.round((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
-//                float tempY = Math.round((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
-
-//            offsetX = Math.abs(tempX-x);
-//            offsetY = Math.abs(tempY-y);
-
-
-
-//                x = offsetX + Math.round((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
-//                y = offsetY + Math.round((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
+                PointF intersection = getPointOnPolygonOutline(x, y);
+                if(intersection != null) {
+                    x = intersection.x;
+                    y = intersection.y;
+                }
                 break;
-            case 2:
+            case WALLS_BUILDING:
                 // approximate x and y to be on the point collienear to the nearest line
                 PointF intersection2 = getPointOnPolygonOutline(x, y);
-                if(intersection2 != null) {
+                if(intersection2 != null) { // if (boundary wall is reached)
                     x = intersection2.x;
                     y = intersection2.y;
-                } else {
+                } else { // still building boundary wall
                     x = offsetX + Math.round((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
                     y = offsetY + Math.round((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
                 }
@@ -92,18 +84,16 @@ public class DrawingImageView extends ImageView {
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-
-
                 switch (currentState) {
-                    case 0:
+                    case BOUNDARY_BUILDING:
                         point = new PointF(x, y);
                         outline.add(point);
                         break;
-                    case 1:
+                    case STABLE:
                         point = new PointF(x, y);
                         polygons.add(new ArrayList<PointF>());
                         break;
-                    case 2:
+                    case WALLS_BUILDING:
                         point = new PointF(x, y);
                         polygons.get(polygons.size() - 1).add(point);
                         break;
@@ -111,59 +101,45 @@ public class DrawingImageView extends ImageView {
 
                 invalidate();
                 break;
-            case MotionEvent.ACTION_MOVE:
-                currentPoint = new PointF(x, y);
-                break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
                 boolean valid = false;
 
-
                 switch (currentState) {
-                    case 0:
-                        if (outline.size() > 1) {
+                    case BOUNDARY_BUILDING:
+                        if (outline.size() > 1) { // if at least 2 points in boundary wall
                             PointF last = outline.get(outline.size() - 1);
                             PointF first = outline.get(0);
                             if (Math.abs(last.x - first.x) < THRESHOLD && Math.abs(last.y - first.y) < THRESHOLD) {
+                                // snap last point to first point if within THRESHOLD
                                 outline.set(outline.size() - 1, new PointF(first.x, first.y));
 
                                 closingPolygonPointIndex = outline.size() - 1;
                                 Toast toast = Toast.makeText(this.getContext(),
                                         "Outline drawn successfully",
                                         Toast.LENGTH_SHORT);
-
                                 toast.show();
 
-                                //go to state 1
-                                currentState = 1;
+                                currentState = STATE.STABLE;
                             }
                             invalidate();
                         }
 
-
                         currentPoint = null;
                         break;
-                    case 1:
+                    case STABLE:
                         if (isPointOnPolygonOutline(x, y)) {
-//                            if (!isPointInPolygon(x, y)) {
-
                             // we are actually starting a new polygon
                             PointF startingPoint = new PointF(x,y);
                             polygons.get(polygons.size() - 1).add(startingPoint);
-
-
                             invalidate();
 
                             Toast toast = Toast.makeText(this.getContext(),
                                     "Starting room drawing",
                                     Toast.LENGTH_LONG);
                             toast.show();
-                            valid = true;
-                            currentState = 2;
-
-                        }
-
-                        if (!valid) {
+                            currentState = STATE.WALLS_BUILDING;
+                        } else { // not on boundary
                             List<PointF> lastPoly = polygons.get(polygons.size() - 1);
                             if(lastPoly.size() > 0){
                                 lastPoly.remove(lastPoly.size() - 1);
@@ -172,28 +148,21 @@ public class DrawingImageView extends ImageView {
                         }
 
                         break;
-                    case 2:
+                    case WALLS_BUILDING:
                          if (isPointOnPolygonOutline(x, y)) {
-//                             if (!isPointInPolygon(x, y)) {
                             Toast toast = Toast.makeText(this.getContext(),
                                     "Room completed",
                                     Toast.LENGTH_LONG);
 
                             toast.show();
-                            valid = true;
-                            currentState = 1;
-
+                            currentState = STATE.STABLE;
                         } else if (isPointInPolygon(x, y)) {
                              Toast toast = Toast.makeText(this.getContext(),
                                      "Drawing room segment",
                                      Toast.LENGTH_SHORT);
 
                              toast.show();
-                             valid = true;
-                         }
-
-                         // if point is outside polygon
-                        if (!valid) {
+                        } else { // if point is outside polygon
                             List<PointF> lastPoly = polygons.get(polygons.size() - 1);
                             lastPoly.remove(lastPoly.size() - 1);
                             invalidate();
@@ -353,12 +322,11 @@ public class DrawingImageView extends ImageView {
 
 
     private PointF getPointOnPolygonOutline(float x, float y) {
-
-        if (outline.size() < 3) {
+        if (outline.size() < 3) { // boundary is a straight line or single point
             return null;
         }
 
-        for (int i = 0; i < outline.size() - 1; i++) {
+        for (int i = 0; i < outline.size() - 1; i++) { //loop through all boundary points
             float x1 = outline.get(i).x;
             float y1 = outline.get(i).y;
             float x2 = outline.get(i + 1).x;
@@ -369,20 +337,20 @@ public class DrawingImageView extends ImageView {
             float c = ((x1 - x2) * y1) + ((y2 - y1) * x1);
 
             if (circleIntersectsLine(a, b, c, x, y, 15)) {
-
                 //find coordinate of interest
-                float gradient1 = ((y2-y1)/(x2-x1));
-                float intercept1 = y1-(gradient1*x1);
+                // line 1
+                float m1 = ((y2-y1) / (x2-x1));
+                float c1 = y1 - (m1*x1);
 
-//                List<PointF> currentPolygon = polygons.get(polygons.size() - 1);
-                x1 = x;
-                y1 = y*(-1);
-                float gradient2 = -1/gradient1;
-                float intercept2 = y1-(gradient1*x1);
+                // line 2
+                float x3 = x;
+                float y3 = y * (-1);
+                float m2 = -1 / m1;
+                float c2 = y3 - (m2 * x3);
 
-                float intersectionX = ((intercept2-intercept1)/(gradient1-gradient2));
-                float intersectionY = ((gradient1*intersectionX)+intercept1)*(-1);
-
+                // points of intersection of line 1 and line 2
+                float intersectionX = ((c2 - c1) / (m1-m2));
+                float intersectionY = ((m1 * intersectionX) + c1)*(-1);
 
                 return new PointF(intersectionX, intersectionY);
             }
@@ -390,11 +358,6 @@ public class DrawingImageView extends ImageView {
 
         return null;
     }
-
-
-
-
-
 
     private PointF getPointOnPolygonOutlineOld(float x, float y) {
 
