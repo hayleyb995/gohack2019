@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -21,13 +22,18 @@ public class DrawingImageView extends ImageView {
     private Paint paint = new Paint();
     private List<PointF> outline = new ArrayList<>();
     private List<List<PointF>> polygons = new ArrayList<>();
+    private final float tickness = (float) 0.5;
+    private final int material = 1;
     private PointF currentPoint;
+    private Button readyButton;
+
 
     private static final int THRESHOLD = 100;
 
     public DrawingImageView(Context context) {
         super(context);
         paint.setStrokeWidth(5);
+
     }
 
     public DrawingImageView(Context context, AttributeSet attrs) {
@@ -42,13 +48,15 @@ public class DrawingImageView extends ImageView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+
+
         float x = (float) Math.floor(event.getX());
         float y = (float) Math.floor(event.getY());
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 point = new PointF(x, y);
-                if (currentState == 0) {
+                if (currentState == 0) { //Drawing outline
                     outline.add(point);
                 } else {
                     if (polygons.size() == 0) {
@@ -134,6 +142,7 @@ public class DrawingImageView extends ImageView {
 
                             //go to state 1
                             currentState = 1;
+                            readyButton.setEnabled(true);
                         }
                         invalidate();
                     }
@@ -254,5 +263,38 @@ public class DrawingImageView extends ImageView {
         double dist = (Math.abs(a * x + b * y + c)) / Math.sqrt(a * a + b * b);
 
         return radius >= dist;
+    }
+
+    public List<PolyLine> getPolyLines() {
+
+        List<PolyLine> polyLines = new ArrayList<>();
+        if (outline.size() > 2) {
+            for (int i = 0; i <= outline.size() - 2; i++) {
+
+                Coordinate startingPoint = new Coordinate(outline.get(i).x, outline.get(i).y);
+                Coordinate endingPoint = new Coordinate(outline.get(i + 1).x, outline.get(i + 1).y);
+                PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, PolyLine.Material.CONCRETE);
+                polyLines.add(polyLine);
+            }
+        }
+
+        for(int i = 0; i < polygons.size(); i++){
+            List<PointF> polygonOutline = polygons.get(0);
+            if (polygonOutline.size() > 2) {
+                for (int j = 0; j <= polygonOutline.size() - 2; j++) {
+
+                    Coordinate startingPoint = new Coordinate(polygonOutline.get(j).x, polygonOutline.get(i).y);
+                    Coordinate endingPoint = new Coordinate(polygonOutline.get(i + 1).x, polygonOutline.get(i + 1).y);
+                    PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, PolyLine.Material.CONCRETE);
+                    polyLines.add(polyLine);
+                }
+            }
+        }
+        return polyLines;
+    }
+
+    public void setReadyButton(Button button){
+        this.readyButton = button;
+
     }
 }
