@@ -23,6 +23,7 @@ public class DrawingImageView extends ImageView {
     private List<List<PointF>> polygons = new ArrayList<>();
     private PointF currentPoint;
 
+    private static final int CELL_INCREMENT = 100;
     private static final int THRESHOLD = 100;
 
     public DrawingImageView(Context context) {
@@ -42,8 +43,8 @@ public class DrawingImageView extends ImageView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        float x = (float) Math.floor(event.getX());
-        float y = (float) Math.floor(event.getY());
+        float x = Math.round((float) Math.floor(event.getX()) / CELL_INCREMENT) * CELL_INCREMENT;
+        float y = Math.round((float) Math.floor(event.getY()) / CELL_INCREMENT) * CELL_INCREMENT;
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
@@ -148,6 +149,15 @@ public class DrawingImageView extends ImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
+        paint.setColor(Color.GRAY);
+
+        for (int i = 0; i < this.getWidth(); i += CELL_INCREMENT) {
+            for (int j = 0; j < this.getHeight(); j += CELL_INCREMENT) {
+                canvas.drawPoint(i, j, paint);
+            }
+        }
+
         paint.setColor(Color.BLUE);
         for (int i = 0; i < outline.size() - 1; i++) {
             PointF p1 = outline.get(i);
