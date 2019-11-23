@@ -23,7 +23,7 @@ public class DrawingImageView extends ImageView {
 
     private PointF point;
     int closingPolygonPointIndex;
-    STATE currentState;
+    STATE currentState = STATE.BOUNDARY_BUILDING;
     private Paint paint = new Paint();
     private List<PointF> outline = new ArrayList<>();
     private List<List<PointF>> polygons = new ArrayList<>();
