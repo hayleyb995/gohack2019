@@ -179,7 +179,7 @@ public class DrawingImageView extends ImageView {
         super.onDraw(canvas);
 
         // paint grid only in state 0
-        if(currentState == 0) {
+        if(currentState == STATE.BOUNDARY_BUILDING) {
             paint.setColor(Color.GRAY);
             for (int i = 0; i < this.getWidth(); i += CELL_INCREMENT) {
                 for (int j = 0; j < this.getHeight(); j += CELL_INCREMENT) {
@@ -193,7 +193,7 @@ public class DrawingImageView extends ImageView {
         float xOffset = (float)offsetX;
         float yOffset = (float)offsetY;
 
-        if(currentState == 2) {
+        if(currentState == STATE.WALLS_BUILDING) {
             paint.setColor(Color.GRAY);
             for (int i = 0; i < this.getWidth(); i += CELL_GRANULAR_INCREMENT) {
                 for (int j = 0; j < this.getHeight(); j += CELL_GRANULAR_INCREMENT) {
@@ -243,7 +243,7 @@ public class DrawingImageView extends ImageView {
     }
 
     public void clearView() {
-        currentState = 0;
+        currentState = STATE.BOUNDARY_BUILDING;
         outline.clear();
         polygons.clear();
         invalidate();
