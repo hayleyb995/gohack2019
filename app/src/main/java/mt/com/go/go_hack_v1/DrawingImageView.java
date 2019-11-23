@@ -3,6 +3,7 @@ package mt.com.go.go_hack_v1;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.util.AttributeSet;
@@ -156,6 +157,8 @@ public class DrawingImageView extends ImageView {
 
                             toast.show();
                             currentState = STATE.STABLE;
+
+                            invalidate();
                         } else if (isPointInPolygon(x, y)) {
                              Toast toast = Toast.makeText(this.getContext(),
                                      "Drawing room segment",
@@ -203,13 +206,32 @@ public class DrawingImageView extends ImageView {
         }
 
         // paint outline
-        paint.setColor(Color.BLUE);
+        if(currentState == STATE.STABLE) {
+            paint.setColor(Color.BLUE);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setPathEffect(new DashPathEffect(new float[]{5, 10, 15, 20}, 0));
+
+        } else {
+            paint.setColor(Color.BLUE);
+        }
         for (int i = 0; i < outline.size() - 1; i++) {
             PointF p1 = outline.get(i);
             PointF p2 = outline.get(i + 1);
             if (p1 != null && p2 != null) {
                 canvas.drawLine(p1.x, p1.y, p2.x, p2.y, paint);
             }
+        }
+
+        // reset paint
+        paint.setPathEffect(null);
+        paint.setStyle(Paint.Style.FILL);
+
+        // paint origin of outline
+        if (outline.size() == 1) {
+            paint.setColor(Color.RED);
+            paint.setStrokeWidth(20);
+            canvas.drawPoint(outline.get(0).x, outline.get(0).y, paint);
+            paint.setStrokeWidth(5);
         }
 
         // paint rooms
