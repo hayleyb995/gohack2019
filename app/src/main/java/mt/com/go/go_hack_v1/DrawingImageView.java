@@ -232,14 +232,6 @@ public class DrawingImageView extends ImageView {
                 paint.setStrokeWidth(5);
             }
         }
-
-//        if (currentPoint != null) {
-//            PointF p1 = points.get(points.size() - 1);
-//            PointF p2 = currentPoint;
-//            paint.setColor(Color.RED);
-//            canvas.drawLine(p1.x, p1.y, p2.x, p2.y, paint);
-//            paint.setColor(Color.BLACK);
-//        }
     }
 
     public void clearView() {
@@ -328,23 +320,24 @@ public class DrawingImageView extends ImageView {
 
         for (int i = 0; i < outline.size() - 1; i++) { //loop through all boundary points
             float x1 = outline.get(i).x;
-            float y1 = outline.get(i).y;
+            float y1 = outline.get(i).y * (-1);
             float x2 = outline.get(i + 1).x;
-            float y2 = outline.get(i + 1).y;
+            float y2 = outline.get(i + 1).y * (-1);
 
             float a = y1 - y2;
             float b = x2 - x1;
             float c = ((x1 - x2) * y1) + ((y2 - y1) * x1);
 
-            if (circleIntersectsLine(a, b, c, x, y, 15)) {
+            float x3 = x;
+            float y3 = y * (-1);
+
+            if (circleIntersectsLine(a, b, c, x3, y3, 50)) {
                 //find coordinate of interest
                 // line 1
-                float m1 = ((y2-y1) / (x2-x1));
-                float c1 = y1 - (m1*x1);
+                float m1 = ((y2 - y1) / (x2 - x1));
+                float c1 = y1 - (m1 * x1);
 
                 // line 2
-                float x3 = x;
-                float y3 = y * (-1);
                 float m2 = -1 / m1;
                 float c2 = y3 - (m2 * x3);
 
