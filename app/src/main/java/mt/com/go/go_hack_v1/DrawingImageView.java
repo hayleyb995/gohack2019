@@ -118,6 +118,7 @@ public class DrawingImageView extends ImageView {
                         point = new PointF(x, y);
                         outline.add(point);
                         if (outline.size() > 1) {
+                            undoButton.setImageResource(R.drawable.undo);
                             undoButton.setEnabled(true);
                         }
                         break;
@@ -152,6 +153,7 @@ public class DrawingImageView extends ImageView {
                                 toast.show();
 
                                 currentState = STATE.STABLE;
+                                readyButton.setImageResource(R.drawable.forward);
                                 readyButton.setEnabled(true);
                             }
                             invalidate();
@@ -181,7 +183,7 @@ public class DrawingImageView extends ImageView {
 
                         break;
                     case WALLS_BUILDING:
-                        if (isPointOnPolygonOutline(x, y)) {
+                         if (isPointOnPolygonOutline(x, y)) {
                             Toast toast = Toast.makeText(this.getContext(),
                                     "Room completed",
                                     Toast.LENGTH_LONG);
@@ -191,11 +193,11 @@ public class DrawingImageView extends ImageView {
 
                             invalidate();
                         } else if (isPointInPolygon(x, y)) {
-                            Toast toast = Toast.makeText(this.getContext(),
-                                    "Drawing room segment",
-                                    Toast.LENGTH_SHORT);
+                             Toast toast = Toast.makeText(this.getContext(),
+                                     "Drawing room segment",
+                                     Toast.LENGTH_SHORT);
 
-                            toast.show();
+                             toast.show();
                         } else { // if point is outside polygon
                             List<PointF> lastPoly = polygons.get(polygons.size() - 1);
                             lastPoly.remove(lastPoly.size() - 1);
@@ -472,10 +474,12 @@ public class DrawingImageView extends ImageView {
         if(outline.size() >=1 && polygons.isEmpty()){
             outline.remove(outline.size()-1);
             if(outline.size() ==0){
+                undoButton.setImageResource(R.drawable.undo_grey);
                 undoButton.setEnabled(false);
             }
             if (currentState == STATE.STABLE) {
                 currentState = STATE.BOUNDARY_BUILDING;
+                readyButton.setImageResource(R.drawable.forward_grey);
                 readyButton.setEnabled(false);
             }
             invalidate();
@@ -497,9 +501,9 @@ public class DrawingImageView extends ImageView {
                 invalidate();
             } else {
                 outline.remove(outline.size()-1);
-                readyButton.setEnabled(false);
+                readyButton.setImageResource(R.drawable.forward_grey);
                 if(outline.size() ==0){
-                    undoButton.setEnabled(false);
+                    undoButton.setImageResource(R.drawable.undo_grey);
                 }
                 invalidate();
                 currentState = STATE.BOUNDARY_BUILDING;
@@ -522,7 +526,7 @@ public class DrawingImageView extends ImageView {
         float greenComponent = 1;
         if(heatmapValue <= 0.5) {
             greenComponent = 1f * (heatmapValue*2);
-        }
+    }
         else {
             redComponent = 1f * (1f-((heatmapValue-0.5f)*2));
         }

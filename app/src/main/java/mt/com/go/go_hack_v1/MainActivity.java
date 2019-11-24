@@ -58,16 +58,23 @@ public class MainActivity extends AppCompatActivity {
         ImageButton clearButton = findViewById(R.id.clearButton);
         final ImageButton readyButton = findViewById(R.id.readyButton);
         final ImageButton undoButton = findViewById(R.id.undoButton);
+        final ImageButton saveButton = findViewById(R.id.saveButton);
+        final ImageButton homeButton = findViewById(R.id.backButton);
         view.setReadyButton(readyButton);
         view.setUndoButton(undoButton);
         readyButton.setEnabled(true);
         undoButton.setEnabled(false);
+        readyButton.setImageResource(R.drawable.forward_grey);
+        undoButton.setImageResource(R.drawable.undo_grey);
+
 
         clearButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 view.clearView();
                 undoButton.setEnabled(false);
                 readyButton.setEnabled(false);
+                readyButton.setImageResource(R.drawable.forward_grey);
+                undoButton.setImageResource(R.drawable.undo_grey);
                 view.invalidate();
             }
         });
@@ -112,6 +119,19 @@ public class MainActivity extends AppCompatActivity {
         undoButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 view.undoAction();
+            }
+        });
+
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                view.saveState();
+            }
+        });
+
+        homeButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                finish();
+
             }
         });
 
