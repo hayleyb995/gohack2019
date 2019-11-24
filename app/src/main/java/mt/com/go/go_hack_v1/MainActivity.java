@@ -125,6 +125,11 @@ public class MainActivity extends AppCompatActivity {
         saveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 view.saveState();
+
+                Toast toast = Toast.makeText(getApplicationContext(),
+                        "Saved Successfully",
+                        Toast.LENGTH_SHORT);
+                toast.show();
             }
         });
 
