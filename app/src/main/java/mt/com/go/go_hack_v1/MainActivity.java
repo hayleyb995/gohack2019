@@ -16,9 +16,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         final DrawingImageView view = findViewById(R.id.image);
         Button clearButton = findViewById(R.id.clearButton);
-        Button readyButton = findViewById(R.id.readyButton);
+        final Button readyButton = findViewById(R.id.readyButton);
         final Button undoButton = findViewById(R.id.undoButton);
         view.setReadyButton(readyButton);
+        view.setUndoButton(undoButton);
         clearButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.LIGHTEN);
         readyButton.setEnabled(false);
         undoButton.setEnabled(false);
@@ -27,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 view.clearView();
                 undoButton.setEnabled(false);
+                readyButton.setEnabled(false);
             }
         });
 
@@ -46,16 +48,7 @@ public class MainActivity extends AppCompatActivity {
         });
         undoButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                final List<PolyLine> polyLines = view.getPolyLines();
-                if(polyLines.isEmpty()){
-                    Toast toast = Toast.makeText(getApplicationContext(),
-                            "Issue with plan.",
-                            Toast.LENGTH_SHORT);
-                    toast.show();
-                } else {
-                    Intent mockIntent = new Intent(getApplicationContext(), MockService.class);
-                    mockIntent.putExtra("Plan", (Serializable) polyLines);
-                }
+                view.undoAction();
             }
         });
     }

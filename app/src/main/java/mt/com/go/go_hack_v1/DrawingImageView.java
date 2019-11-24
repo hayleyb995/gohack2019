@@ -24,6 +24,7 @@ enum STATE {
 public class DrawingImageView extends ImageView {
 
     private Button readyButton;
+    private Button undoButton;
     private PointF point;
     int closingPolygonPointIndex;
     STATE currentState = STATE.BOUNDARY_BUILDING;
@@ -91,6 +92,9 @@ public class DrawingImageView extends ImageView {
                     case BOUNDARY_BUILDING:
                         point = new PointF(x, y);
                         outline.add(point);
+                        if(outline.size() >1){
+                            undoButton.setEnabled(true);
+                        }
                         break;
                     case STABLE:
                         point = new PointF(x, y);
@@ -366,6 +370,10 @@ public class DrawingImageView extends ImageView {
         return null;
     }
 
+    public void setUndoButton(Button button){
+        this.undoButton = button;
+    }
+
     public void setReadyButton(Button button){
         this.readyButton = button;
     }
@@ -392,5 +400,41 @@ public class DrawingImageView extends ImageView {
             }
         }
         return polyLines;
+    }
+
+    public void undoAction(){
+        if(outline.size() >1 && polygons.isEmpty()){
+            outline.remove(outline.size()-1);
+            if(outline.size() ==0){
+                undoButton.setEnabled(false);
+            }
+            if(currentState == STATE.STABLE){
+                currentState = STATE.BOUNDARY_BUILDING;
+            }
+            invalidate();
+        } else {
+            List<PointF> polygon = polygons.get(polygons.size() - 1);
+            if(!polygon.isEmpty()){
+                polygon.remove(polygon.size()-1);
+                invalidate();
+                if(polygon.isEmpty()){
+                    currentState = STATE.STABLE;
+                } else {
+                    currentState = STATE.WALLS_BUILDING;
+                }
+
+            } else if (polygons.size() != 1) {
+                List<PointF> previousPolygon = polygons.get(polygons.size() - 2);
+                previousPolygon.remove(previousPolygon.size()-1);
+                invalidate();
+            } else {
+                outline.remove(outline.size()-1);
+                if(outline.size() ==0){
+                    undoButton.setEnabled(false);
+                }
+                invalidate();
+                currentState = STATE.BOUNDARY_BUILDING;
+            }
+        }
     }
 }
