@@ -14,12 +14,13 @@ import mt.com.go.go_hack_v1.apoe.model.recommendation.Recommendation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 public class OptimizationEngine implements Runnable {
 
-    private static final int MAX_STEPS = 100;
+    private static final int MAX_STEPS = 150;
     private static final int MAX_ACCESS_POINTS = 5;
-    private static final float AVERAGE_DECIBEL_THRESHOLD = -40;
+    private static final float AVERAGE_DECIBEL_THRESHOLD = -60;
     private static final int GRID_CELL_SIZE = 20; //This is in cm
     private static final float UI_SCALE_FACTOR = 0.02f;
 
@@ -46,28 +47,27 @@ public class OptimizationEngine implements Runnable {
 
         int accessPointCount = 0;
 
+        //Move inside when we fix the Optimal solution
+        double[][] signalStrengthHeatMap = null;
+        AccessPoint[] accessPoints;
+
         do {
             accessPointCount++;
 
-            AccessPoint[] accessPoints = randomlyPlaceAccessPoints(usabilityGrid, accessPointCount);
+            accessPoints = randomlyPlaceAccessPoints(pathLossHeatMap.dim_x, pathLossHeatMap.dim_y, accessPointCount);
             int step = 0;
 
             while (step < MAX_STEPS) {
-                double[][] signalStrengthHeatMap = pathLossModel.generateHeatMap(pathLossHeatMap, accessPoints, false);
+                signalStrengthHeatMap = pathLossModel.generateHeatMap(pathLossHeatMap, accessPoints, false);
 
-                GridPoint gridPoint = getMostAttractiveGridPoint(usabilityGrid, signalStrengthHeatMap);
-                AccessPoint accessPoint = getBestAccessPointToMove(signalStrengthHeatMap, gridPoint, accessPoints);
+                GridPoint attractiveGridPoint = getMostAttractiveGridPoint(usabilityGrid, signalStrengthHeatMap);
+                AccessPoint accessPoint = getBestAccessPointToMove(signalStrengthHeatMap, attractiveGridPoint, accessPoints);
 
-                accessPoint.moveTowards(signalStrengthHeatMap.length, signalStrengthHeatMap[0].length, gridPoint);
+                accessPoint.moveTowards(signalStrengthHeatMap.length, signalStrengthHeatMap[0].length, attractiveGridPoint);
 
                 System.out.println(step);
 
-                for (int i = 0; i < signalStrengthHeatMap.length; i++) {
-                    for (int j = 0; j < signalStrengthHeatMap[0].length; j++) {
-                        System.out.print(signalStrengthHeatMap[i][j] + ", ");
-                    }
-                    System.out.println();
-                }
+                //Heatmap.generateHeatMapImage(signalStrengthHeatMap, step, accessPointCount);
 
                 if (getAreaCoverage(usabilityGrid, signalStrengthHeatMap) >= AVERAGE_DECIBEL_THRESHOLD) {
                     System.out.println("Found a solution!!!");
@@ -78,7 +78,7 @@ public class OptimizationEngine implements Runnable {
             }
         } while (accessPointCount < MAX_ACCESS_POINTS);
 
-        return new EmptyRecommendation();
+        return new Recommendation(accessPoints, signalStrengthHeatMap);
     }
 
     private Wall[] convertToGridWalls(Wall[] walls) {
@@ -95,12 +95,12 @@ public class OptimizationEngine implements Runnable {
                 UiWall uiWall = (UiWall) wall;
 
                 GridPoint startGridPoint = new GridPoint(
-                        (int) ((uiWall.getStart().y * 100 * UI_SCALE_FACTOR) / GRID_CELL_SIZE),
-                        (int) ((uiWall.getStart().x * 100) * UI_SCALE_FACTOR / GRID_CELL_SIZE));
+                        (int) ((uiWall.getStart().x * 100 * UI_SCALE_FACTOR) / GRID_CELL_SIZE),
+                        (int) ((uiWall.getStart().y * 100 * UI_SCALE_FACTOR) / GRID_CELL_SIZE));
 
                 GridPoint endGridPoint = new GridPoint(
-                        (int) ((uiWall.getEnd().y * 100) * UI_SCALE_FACTOR / GRID_CELL_SIZE),
-                        (int) ((uiWall.getEnd().x * 100) * UI_SCALE_FACTOR / GRID_CELL_SIZE));
+                        (int) ((uiWall.getEnd().x * 100 * UI_SCALE_FACTOR) / GRID_CELL_SIZE),
+                        (int) ((uiWall.getEnd().y * 100 * UI_SCALE_FACTOR) / GRID_CELL_SIZE));
 
                 gridWalls[i] = new GridWall(startGridPoint, endGridPoint, uiWall.getMaterial(), uiWall.getThickness());
             } else {
@@ -111,20 +111,22 @@ public class OptimizationEngine implements Runnable {
         return gridWalls;
     }
 
-    private AccessPoint[] randomlyPlaceAccessPoints(Grid usabilityGrid, int accessPointCount) {
+    private AccessPoint[] randomlyPlaceAccessPoints(int dimrow, int dimcol, int accessPointCount) {
         List<AccessPoint> accessPoints = new ArrayList<>();
         Random random = new Random();
 
         for (int i = 0; i < accessPointCount; i++) {
-            while (true) { //Pray to God
-                int x = random.nextInt(usabilityGrid.getRows());
-                int y = random.nextInt(usabilityGrid.getColumns());
+            //while (true) { //Pray to God
+            int row = random.nextInt(dimrow);
+            int column = random.nextInt(dimcol);
+            System.out.println(dimrow + " ---  " + dimcol);
+            System.out.println(row + "  " + column);
 
-                if (usabilityGrid.getGridCells()[x][y].isUsable()) {
-                    accessPoints.add(new AccessPoint(new GridPoint(x, y)));
-                    break;
-                }
-            }
+            //if (usabilityGrid.getGridCells()[row][column].isUsable()) {
+                accessPoints.add(new AccessPoint(new GridPoint(row, column)));
+            //   break;
+            //}
+            // }
         }
 
         return accessPoints.toArray(new AccessPoint[0]);
@@ -171,24 +173,25 @@ public class OptimizationEngine implements Runnable {
             return null;
         }
 
-        float lowestSum = Float.MAX_VALUE;
+        float lowestAveragedSum = Float.MAX_VALUE;
         AccessPoint bestAccessPoint = accessPoints[0];
 
         for (AccessPoint accessPoint : accessPoints) {
             List<GridPoint> gridPoints = Grid.findLine(
-                    accessPoint.getGridPoint().getColumn(),
-                    accessPoint.getGridPoint().getRow(),
+                    accessPoint.getCurrentGridPoint().getColumn(),
+                    accessPoint.getCurrentGridPoint().getRow(),
                     gridPoint.getColumn(),
                     gridPoint.getRow());
 
             float currentSum = 0;
             for (GridPoint gp : gridPoints) {
-                currentSum += signalStrengthMap[gp.getColumn()][gp.getRow()];
+                currentSum += Math.abs(signalStrengthMap[gp.getRow()][gp.getColumn()]);
             }
 
-            if (currentSum < lowestSum) {
+            float currentAveragedSum = currentSum / gridPoints.size();
+            if(currentAveragedSum < lowestAveragedSum) {
                 bestAccessPoint = accessPoint;
-                lowestSum = currentSum;
+                lowestAveragedSum = currentAveragedSum;
             }
         }
 
