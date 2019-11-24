@@ -573,10 +573,10 @@ public class DrawingImageView extends ImageView {
         currentState = Enum.valueOf(STATE.class, preferences.getString("CURRENT_STATE", STATE.BOUNDARY_BUILDING.name()));
         Type type = new TypeToken<ArrayList<PointF>>() {
         }.getType();
-        outline = gson.fromJson(preferences.getString("OUTLINE", "{}"), type);
+        outline = gson.fromJson(preferences.getString("OUTLINE", "[]"), type);
         type = new TypeToken<ArrayList<ArrayList<PointF>>>() {
         }.getType();
-        polygons = gson.fromJson(preferences.getString("POLYGONS", "{}"), type);
+        polygons = gson.fromJson(preferences.getString("POLYGONS", "[]"), type);
         invalidate();
     }
 
