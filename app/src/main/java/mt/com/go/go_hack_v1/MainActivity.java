@@ -50,12 +50,17 @@ public class MainActivity extends AppCompatActivity {
         view.setUndoButton(undoButton);
         readyButton.setEnabled(false);
         undoButton.setEnabled(false);
+        readyButton.setImageResource(R.drawable.forward_grey);
+        undoButton.setImageResource(R.drawable.undo_grey);
+
 
         clearButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 view.clearView();
                 undoButton.setEnabled(false);
                 readyButton.setEnabled(false);
+                readyButton.setImageResource(R.drawable.forward_grey);
+                undoButton.setImageResource(R.drawable.undo_grey);
                 view.invalidate();
             }
         });
