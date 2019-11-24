@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,11 +29,21 @@ public class WelcomeActivity extends AppCompatActivity {
 
 
         final Button goToDesignerButton = findViewById(R.id.btn_goto_designer);
+        final TextView loadText= findViewById(R.id.txt_lastResults);
 
 
         goToDesignerButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intent);
+
+            }
+        });
+
+        loadText.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                intent.putExtra("LOAD", true);
                 startActivity(intent);
 
             }

@@ -118,6 +118,9 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         if (intent.getBooleanExtra("LOAD_TEMPLATE", false)) {
             view.loadTemplate();
+        } else
+        if (intent.getBooleanExtra("LOAD", false)) {
+            view.loadState();
         }
     }
 
