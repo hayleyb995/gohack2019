@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
                 view.clearView();
                 undoButton.setEnabled(false);
                 readyButton.setEnabled(false);
+                view.invalidate();
             }
         });
 
@@ -68,8 +69,10 @@ public class MainActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT);
                     toast.show();
                 } else {
-                    Intent mockIntent = new Intent(getApplicationContext(), MockService.class);
-                    mockIntent.putExtra("Plan", (Serializable) polyLines);
+                    view.setCurrentState(STATE.READY);
+                    view.invalidate();
+//                    Intent mockIntent = new Intent(getApplicationContext(), MockService.class);
+//                    mockIntent.putExtra("Plan", (Serializable) polyLines);
                 }
             }
         });
