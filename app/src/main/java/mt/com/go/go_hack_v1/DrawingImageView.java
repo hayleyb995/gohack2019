@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.Button;
@@ -32,6 +33,16 @@ public class DrawingImageView extends ImageView {
     private List<List<PointF>> polygons = new ArrayList<>();
     private PointF currentPoint;
 
+    protected int SCREEN_WIDTH = 1200;//this.getWidth();
+    protected int SCREEN_HEIGHT = 2000;//this.getHeight();
+    protected int CELLS_Y = 200;
+    protected int CELLS_X = 200;
+    protected int CELL_LENGTH_X = SCREEN_WIDTH/CELLS_X;
+    protected int CELL_LENGTH_Y = SCREEN_HEIGHT/CELLS_Y;
+    protected float[][] heatMap = new float[CELLS_Y][CELLS_X]; // mock
+    protected Paint paintHeatMap = new Paint();
+    protected Rect rectangle;
+
     float offsetX;
     float offsetY;
 
@@ -39,19 +50,24 @@ public class DrawingImageView extends ImageView {
     private static final int CELL_GRANULAR_INCREMENT = 50;
     private static final int THRESHOLD = 100;
 
+
+
     public DrawingImageView(Context context) {
         super(context);
         paint.setStrokeWidth(5);
+        generateHeatmap();
     }
 
     public DrawingImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
         paint.setStrokeWidth(5);
+        generateHeatmap();
     }
 
     public DrawingImageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         paint.setStrokeWidth(5);
+        generateHeatmap();
     }
 
     @Override
@@ -257,6 +273,35 @@ public class DrawingImageView extends ImageView {
                 paint.setStrokeWidth(5);
             }
         }
+
+        for (int cellY = 0; cellY < CELLS_Y-1; cellY++){
+            for( int cellX = 0; cellX < CELLS_X-1; cellX++){
+
+                int left = (cellX*CELL_LENGTH_X);
+                int top=(cellY*CELL_LENGTH_Y);
+                int right=(cellX+1)*CELL_LENGTH_X;
+                int bottom=(cellY+1)*CELL_LENGTH_Y;
+
+                BoundingBox boundingBox = getBoundingBox();
+                rectangle = new Rect(
+                        (int)Math.floor(boundingBox.getMinX()),
+                        (int)Math.floor(boundingBox.getMinY()),
+                        (int)Math.floor(boundingBox.getMaxX()),
+                        (int)Math.floor(boundingBox.getMaxY()));
+
+                rectangle = new Rect(left,top,right,bottom);
+
+//                rectangle = new Rect(100,100,200,200);
+
+
+                paintHeatMap.setColor(heatmapColorMapper(heatMap[cellY][cellX]));
+
+//                paintHeatMap.setColor(Color.GREEN);
+
+                paintHeatMap.setAlpha(128);
+                canvas.drawRect(rectangle, paintHeatMap);
+            }
+        }
     }
 
     public void clearView() {
@@ -392,5 +437,46 @@ public class DrawingImageView extends ImageView {
             }
         }
         return polyLines;
+    }
+
+
+    protected void generateHeatmap() {
+        for(int grid_y = 0; grid_y < CELLS_Y; grid_y++){
+            for(int grid_x = 0; grid_x < CELLS_X; grid_x++){
+                heatMap[grid_y][grid_x] = (float)grid_x/(float)CELLS_X;
+            }
+        }
+    }
+
+    protected int heatmapColorMapper(float heatmapValue) {
+        float colourValue = 1 * heatmapValue;
+        return Color.rgb(1f, colourValue, 0f);
+
+
+    }
+    
+    private BoundingBox getBoundingBox(){
+        float minX = 0;
+        float maxX = 0;
+        float minY = 0;
+        float maxY = 0;
+        
+        for(PointF point: outline)
+        {
+            if (point.x < minX) {
+                minX=point.x;
+            }
+            if (point.x > maxX) {
+                maxX=point.x;
+            }
+            if (point.y < minY) {
+                minY=point.y;
+            }
+            if (point.y > maxY) {
+                maxY=point.y;
+            }
+        }
+
+        return new BoundingBox(minX, maxX, minY, maxY);
     }
 }
