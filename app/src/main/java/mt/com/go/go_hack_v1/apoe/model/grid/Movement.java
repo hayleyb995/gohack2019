@@ -8,12 +8,12 @@ public interface Movement {
     }
 
     default void moveDown(int rowCount, GridPoint gridPoint) {
-        int row = gridPoint.getRow() > rowCount ? gridPoint.getRow() : gridPoint.getRow() + 1;
+        int row = gridPoint.getRow() >= rowCount - 1 ? gridPoint.getRow() : gridPoint.getRow() + 1;
         gridPoint.setRow(row);
     }
 
     default void moveRight(int columnCount, GridPoint currentPosition) {
-        int column = currentPosition.getColumn() >= columnCount - 1 ? currentPosition.getColumn() - 1 : currentPosition.getColumn() + 1;
+        int column = currentPosition.getColumn() >= columnCount - 1 ? currentPosition.getColumn() : currentPosition.getColumn() + 1;
         currentPosition.setColumn(column);
     }
 
