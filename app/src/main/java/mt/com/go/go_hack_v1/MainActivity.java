@@ -58,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
         ImageButton clearButton = findViewById(R.id.clearButton);
         final ImageButton readyButton = findViewById(R.id.readyButton);
         final ImageButton undoButton = findViewById(R.id.undoButton);
+        final ImageButton saveButton = findViewById(R.id.saveButton);
+        final ImageButton homeButton = findViewById(R.id.backButton);
         view.setReadyButton(readyButton);
         view.setUndoButton(undoButton);
         readyButton.setEnabled(true);
@@ -117,6 +119,19 @@ public class MainActivity extends AppCompatActivity {
         undoButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 view.undoAction();
+            }
+        });
+
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                view.saveState();
+            }
+        });
+
+        homeButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                finish();
+
             }
         });
 
