@@ -16,6 +16,8 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+import mt.com.go.go_hack_v1.apoe.model.plan.Material;
+
 enum STATE {
     BOUNDARY_BUILDING,
     STABLE,
@@ -427,9 +429,9 @@ public class DrawingImageView extends ImageView {
         List<PolyLine> polyLines = new ArrayList<>();
         if (outline.size() > 2) {
             for (int i = 0; i <= outline.size() - 2; i++) {
-                Coordinate startingPoint = new Coordinate(outline.get(i).x, outline.get(i).y);
-                Coordinate endingPoint = new Coordinate(outline.get(i + 1).x, outline.get(i + 1).y);
-                PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, PolyLine.Material.CONCRETE);
+                PointF startingPoint = new PointF(outline.get(i).x, outline.get(i).y);
+                PointF endingPoint = new PointF(outline.get(i + 1).x, outline.get(i + 1).y);
+                PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, Material.CONCRETE);
                 polyLines.add(polyLine);
             }
         }
@@ -437,9 +439,9 @@ public class DrawingImageView extends ImageView {
             List<PointF> polygonOutline = polygons.get(0);
             if (polygonOutline.size() > 2) {
                 for (int j = 0; j <= polygonOutline.size() - 2; j++) {
-                    Coordinate startingPoint = new Coordinate(polygonOutline.get(j).x, polygonOutline.get(i).y);
-                    Coordinate endingPoint = new Coordinate(polygonOutline.get(i + 1).x, polygonOutline.get(i + 1).y);
-                    PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, PolyLine.Material.CONCRETE);
+                    PointF startingPoint = new PointF(polygonOutline.get(j).x, polygonOutline.get(j).y);
+                    PointF endingPoint = new PointF(polygonOutline.get(j + 1).x, polygonOutline.get(j + 1).y);
+                    PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, Material.CONCRETE);
                     polyLines.add(polyLine);
                 }
             }
