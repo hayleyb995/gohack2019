@@ -7,9 +7,11 @@ import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.provider.ContactsContract;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -24,8 +26,8 @@ enum STATE {
 
 public class DrawingImageView extends ImageView {
 
-    private Button readyButton;
-    private Button undoButton;
+    private ImageButton readyButton;
+    private ImageButton undoButton;
     private PointF point;
     int closingPolygonPointIndex;
     STATE currentState = STATE.BOUNDARY_BUILDING;
@@ -278,7 +280,7 @@ public class DrawingImageView extends ImageView {
             }
         }
 
-        for (int cellY = 0; cellY < CELLS_Y-1; cellY++){
+       /* for (int cellY = 0; cellY < CELLS_Y-1; cellY++){
             for( int cellX = 0; cellX < CELLS_X-1; cellX++){
 
                 int left = (cellX*CELL_LENGTH_X);
@@ -305,7 +307,7 @@ public class DrawingImageView extends ImageView {
                 paintHeatMap.setAlpha(128);
                 canvas.drawRect(rectangle, paintHeatMap);
             }
-        }
+        }*/
     }
 
     public void clearView() {
@@ -415,11 +417,11 @@ public class DrawingImageView extends ImageView {
         return null;
     }
 
-    public void setUndoButton(Button button){
+    public void setUndoButton(ImageButton button){
         this.undoButton = button;
     }
 
-    public void setReadyButton(Button button){
+    public void setReadyButton(ImageButton button){
         this.readyButton = button;
     }
 
@@ -448,13 +450,14 @@ public class DrawingImageView extends ImageView {
     }
 
     public void undoAction(){
-        if(outline.size() >1 && polygons.isEmpty()){
+        if(outline.size() >=1 && polygons.isEmpty()){
             outline.remove(outline.size()-1);
             if(outline.size() ==0){
                 undoButton.setEnabled(false);
             }
             if(currentState == STATE.STABLE){
                 currentState = STATE.BOUNDARY_BUILDING;
+                readyButton.setEnabled(false);
             }
             invalidate();
         } else {
@@ -464,6 +467,7 @@ public class DrawingImageView extends ImageView {
                 invalidate();
                 if(polygon.isEmpty()){
                     currentState = STATE.STABLE;
+                    polygons.remove(polygons.size()-1);
                 } else {
                     currentState = STATE.WALLS_BUILDING;
                 }
@@ -474,6 +478,7 @@ public class DrawingImageView extends ImageView {
                 invalidate();
             } else {
                 outline.remove(outline.size()-1);
+                readyButton.setEnabled(false);
                 if(outline.size() ==0){
                     undoButton.setEnabled(false);
                 }
