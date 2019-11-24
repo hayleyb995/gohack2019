@@ -2,6 +2,7 @@ package mt.com.go.go_hack_v1;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
                 view.clearView();
                 undoButton.setEnabled(false);
                 readyButton.setEnabled(false);
+                view.loadTemplate();
             }
         });
 
@@ -74,20 +76,6 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     Recommendation recommendation = engine.recommendation;
-                    System.out.println("DONE ------- " + recommendation);
-
-                    //ExecutorService executor = Executors.newSingleThreadExecutor();
-                    //executor.execute(engine);
-//                    try {
-//                        if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-//                            executor.shutdownNow();
-//                        } else {
-//                            Recommendation recommendation = engine.recommendation;
-//                            System.out.println("DONE ------- " + recommendation);
-//                        }
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
                 }
             }
         });
@@ -97,5 +85,10 @@ public class MainActivity extends AppCompatActivity {
                 view.undoAction();
             }
         });
+
+        Intent intent = getIntent();
+        if (intent.getBooleanExtra("LOAD_TEMPLATE", false)) {
+            view.loadTemplate();
+        }
     }
 }
