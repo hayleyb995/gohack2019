@@ -9,10 +9,30 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_centerHorizontal="true"
-        android:layout_centerVertical="false"
+        android:layout_centerVertical="true"
         android:gravity="center"
         android:orientation="vertical">
 <!--        android:layout_marginTop=""-->
+
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingBottom="30dp"
+            >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textSize="20sp"
+                android:text="First, we need a rough layout \nof your house." />
+        </LinearLayout>
+
 
 
         <LinearLayout
@@ -23,44 +43,18 @@
             android:layout_centerVertical="true"
             android:gravity="center"
             android:orientation="vertical"
-            android:layout_weight="4">
+            android:paddingBottom="30dp"
+            >
 
             <TextView
                 android:id="@+id/txt_titleLarge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:textSize="42sp"
-                android:text="Welcome" />
-
-            <TextView
-                android:id="@+id/txt_titleSmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="32sp"
-                android:text="to WiFi Works" />
-
-
+                android:textSize="20sp"
+                android:text="Would you like to use one of \nour premade templates?" />
         </LinearLayout>
 
-
-
-        <LinearLayout
-            android:id="@+id/lo_subtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
-            android:orientation="vertical"
-            android:layout_weight="2">
-
-            <TextView
-                android:id="@+id/txt_subtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="Plan out your best home Wifi\nin just a few simple steps" />
-        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/lo_actions"
@@ -70,10 +64,10 @@
             android:layout_centerVertical="true"
             android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:layout_weight="8">
+            >
 
             <Button
-                android:id="@+id/btn_goto_designer"
+                android:id="@+id/btn_use_designer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background = "@drawable/roundedbutton"
@@ -82,40 +76,24 @@
                 android:textColor="@android:color/white"
                 android:fontFamily="sans-serif-medium"
                 android:textAllCaps="false"
-                android:text="Get started" />
+                android:text="Yes, give me a template" />
 
-            <TextView
-                android:id="@+id/txt_or"
+            <Button
+                android:id="@+id/btn_not_use_designer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="OR" />
-
-            <TextView
-                android:id="@+id/txt_lastResults"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/load_results"
-                android:gravity="center_horizontal"/>
+                android:background = "@drawable/roundedbutton"
+                android:padding="10dp"
+                android:layout_margin="5dp"
+                android:textColor="@android:color/white"
+                android:fontFamily="sans-serif-medium"
+                android:textAllCaps="false"
+                android:text="No, I'll draw it myself" />
         </LinearLayout>
 
 
     </LinearLayout>
 
 
-    <!-- Footer aligned to bottom -->
-    <RelativeLayout
-        android:id="@+id/lo_footer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:gravity="center">
 
-        <TextView
-            android:id="@+id/tv_footer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:padding="20dp"
-            android:text="Generic legal text of various kinds" />
-    </RelativeLayout>
 </RelativeLayout>

@@ -30,6 +30,8 @@ import mt.com.go.go_hack_v1.apoe.model.recommendation.Recommendation;
 
 public class MainActivity extends AppCompatActivity {
 
+    boolean isMock = true;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,11 +62,19 @@ public class MainActivity extends AppCompatActivity {
         final ImageButton undoButton = findViewById(R.id.undoButton);
         final ImageButton saveButton = findViewById(R.id.saveButton);
         final ImageButton homeButton = findViewById(R.id.backButton);
+        if(isMock){
+
+            readyButton.setEnabled(true);
+            readyButton.setImageResource(R.drawable.forward);
+        } else {
+
+            readyButton.setEnabled(false);
+            readyButton.setImageResource(R.drawable.forward_grey);
+        }
         view.setReadyButton(readyButton);
         view.setUndoButton(undoButton);
-        readyButton.setEnabled(true);
         undoButton.setEnabled(false);
-        readyButton.setImageResource(R.drawable.forward_grey);
+
         undoButton.setImageResource(R.drawable.undo_grey);
 
 
@@ -81,37 +91,51 @@ public class MainActivity extends AppCompatActivity {
 
         readyButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                final List<PolyLine> polyLines = view.getPolyLines();
-                if (polyLines.isEmpty()) {
-                    Toast toast = Toast.makeText(getApplicationContext(),
-                            "Issue with plan.",
-                            Toast.LENGTH_SHORT);
-                    toast.show();
-                } else {
 
-                    Wall[] walls = new Wall[polyLines.size()];
+                if(isMock) {
+                        Toast toast = Toast.makeText(getApplicationContext(),
+                                "Computing Solution",
+                                Toast.LENGTH_SHORT);
+                        toast.show();
 
-                    for (int i = 0; i < polyLines.size(); i++) {
-                        PolyLine line = polyLines.get(i);
-                        UiWall wall = new UiWall(line.getCoordinates().get(0), line.getCoordinates().get(1), Material.CONCRETE, 1);
-                        walls[i] = wall;
-                    }
 
-                    OptimizationEngine engine = new OptimizationEngine(walls);
-
-                    Thread thread = new Thread(engine);
-                    thread.start();
-                    try {
-                        thread.join();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    Recommendation recommendation = engine.recommendation;
                     view.setCurrentState(STATE.READY);
                     view.invalidate();
+
+                } else {
+                    final List<PolyLine> polyLines = view.getPolyLines();
+                    if (polyLines.isEmpty()) {
+                        Toast toast = Toast.makeText(getApplicationContext(),
+                                "Issue with plan.",
+                                Toast.LENGTH_SHORT);
+                        toast.show();
+                    } else {
+
+                        Wall[] walls = new Wall[polyLines.size()];
+
+                        for (int i = 0; i < polyLines.size(); i++) {
+                            PolyLine line = polyLines.get(i);
+                            UiWall wall = new UiWall(line.getCoordinates().get(0), line.getCoordinates().get(1), Material.CONCRETE, 1);
+                            walls[i] = wall;
+                        }
+
+                        OptimizationEngine engine = new OptimizationEngine(walls);
+
+                        Thread thread = new Thread(engine);
+                        thread.start();
+                        try {
+                            thread.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        Recommendation recommendation = engine.recommendation;
+                        view.setCurrentState(STATE.READY);
+                        view.invalidate();
 //                    Intent mockIntent = new Intent(getApplicationContext(), MockService.class);
 //                    mockIntent.putExtra("Plan", (Serializable) polyLines);
+                    }
+
                 }
             }
         });
@@ -135,8 +159,9 @@ public class MainActivity extends AppCompatActivity {
 
         homeButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(),WelcomeActivity.class);
+                startActivity(intent);
                 finish();
-
             }
         });
 

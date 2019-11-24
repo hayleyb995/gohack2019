@@ -2,6 +2,9 @@ package mt.com.go.go_hack_v1;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.DashPathEffect;
@@ -9,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.Button;
@@ -193,11 +197,7 @@ public class DrawingImageView extends ImageView {
 
                             invalidate();
                         } else if (isPointInPolygon(x, y)) {
-                             Toast toast = Toast.makeText(this.getContext(),
-                                     "Drawing room segment",
-                                     Toast.LENGTH_SHORT);
-
-                             toast.show();
+                             //do nothing
                         } else { // if point is outside polygon
                             List<PointF> lastPoly = polygons.get(polygons.size() - 1);
                             lastPoly.remove(lastPoly.size() - 1);
@@ -291,7 +291,7 @@ public class DrawingImageView extends ImageView {
         if(currentState == STATE.READY) {
             double[][] mockResult = generateMockResult();
             for (int cellX = 0; cellX < mockResult.length - 2; cellX++) {
-                for (int cellY = 0; cellY < mockResult[cellX].length - 2; cellY++) {
+                for (int cellY = 240; cellY < mockResult[cellX].length - 2; cellY++) {
 
                     rectangle = new Rect(
                             cellX,
@@ -307,7 +307,7 @@ public class DrawingImageView extends ImageView {
             }
             // draw APS
             drawAP(canvas, 300, 500, "A");
-            drawAP(canvas, 500, 600, "B");
+            drawAP(canvas, 700, 1350, "B");
 
         }
 
@@ -318,13 +318,22 @@ public class DrawingImageView extends ImageView {
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.BLUE);
-        canvas.drawCircle(x, y , 50, paint);
+//        canvas.drawCircle(x, y , 50, paint);
 
 
-        paint.setColor(Color.WHITE);
+        Drawable d = getResources().getDrawable(R.drawable.wifi_point, null);
+//        d.setBounds(x, y, x+1000, y+1000);
+//        d.draw(canvas);
+
+        Resources res = getResources();
+        Bitmap bitmap = BitmapFactory.decodeResource(res, R.drawable.wifi_point);
+        canvas.drawBitmap(bitmap, x-bitmap.getWidth()/2, y-bitmap.getHeight()/2, paint);
+
+
+        paint.setColor(Color.BLACK);
         paint.setTextSize(35);
         paint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        canvas.drawText(label, x, y, paint);
+        canvas.drawText(label, x+bitmap.getWidth()/2, y+bitmap.getHeight()/2, paint);
     }
 
     public void clearView() {
@@ -530,7 +539,7 @@ public class DrawingImageView extends ImageView {
         else {
             redComponent = 1f * (1f-((heatmapValue-0.5f)*2));
         }
-        return Color.rgb(redComponent, greenComponent, 0f);
+        return 1-Color.rgb(redComponent, greenComponent, 0f);
     }
 
     private BoundingBox getBoundingBox(){
@@ -645,14 +654,60 @@ public class DrawingImageView extends ImageView {
         int length = (int)Math.ceil(maxX)+(int)Math.floor(minX);
         int height = (int)Math.ceil(maxY)+(int)Math.floor(minY);
 
+        double maxDistance = 0;
+        double minDistance = 0;
+
         double array[][] = new double[length][height];
 
         for(int i=0; i<length; i++) {
             for(int j=0; j<height; j++){
-                array[i][j] = (double)j/(double)height;
+
+
+                double distanceFromA = calculateDistanceBetweenPoints(i,j*(-1),300,500*(-1));
+                double distanceFromB = calculateDistanceBetweenPoints(i,j*(-1),700,1350*(-1));
+
+                double smallerDistance = Math.min(distanceFromA, distanceFromB);
+                if(i == 0 && j==0){
+                    maxDistance = smallerDistance;
+                    minDistance = smallerDistance;
+
+                }
+
+                if(smallerDistance>maxDistance){
+                    maxDistance=smallerDistance;
+                } else if(smallerDistance<minDistance){
+                    minDistance=smallerDistance;
+                }
+
+
+                array[i][j] = smallerDistance;
+
+
+//                array[i][j] = (double)j/(double)height;
             }
         }
 
+        for(int i=0; i<length; i++) {
+            for(int j=0; j<height; j++){
+
+
+                array[i][j] = (array[i][j]-minDistance)/(maxDistance-minDistance);
+
+            }
+        }
+
+
+//        drawAP(canvas, 300, 500, "A");
+//        drawAP(canvas, 700, 1350, "B");
+
         return array;
+    }
+
+    public double calculateDistanceBetweenPoints(
+            double x1,
+            double y1,
+            double x2,
+            double y2) {
+        return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 }
