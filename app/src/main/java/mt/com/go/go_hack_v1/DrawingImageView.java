@@ -7,6 +7,7 @@ import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.Button;
@@ -19,7 +20,8 @@ import java.util.List;
 enum STATE {
     BOUNDARY_BUILDING,
     STABLE,
-    WALLS_BUILDING
+    WALLS_BUILDING,
+    READY
 }
 
 public class DrawingImageView extends ImageView {
@@ -278,34 +280,51 @@ public class DrawingImageView extends ImageView {
             }
         }
 
-        for (int cellY = 0; cellY < CELLS_Y-1; cellY++){
-            for( int cellX = 0; cellX < CELLS_X-1; cellX++){
-
-                int left = (cellX*CELL_LENGTH_X);
-                int top=(cellY*CELL_LENGTH_Y);
-                int right=(cellX+1)*CELL_LENGTH_X;
-                int bottom=(cellY+1)*CELL_LENGTH_Y;
-
-                BoundingBox boundingBox = getBoundingBox();
-                rectangle = new Rect(
-                        (int)Math.floor(boundingBox.getMinX()),
-                        (int)Math.floor(boundingBox.getMinY()),
-                        (int)Math.floor(boundingBox.getMaxX()),
-                        (int)Math.floor(boundingBox.getMaxY()));
-
-                rectangle = new Rect(left,top,right,bottom);
-
-//                rectangle = new Rect(100,100,200,200);
 
 
-                paintHeatMap.setColor(heatmapColorMapper(heatMap[cellY][cellX]));
+        if(currentState == STATE.READY) {
+            double[][] mockResult = generateMockResult();
+
+            for (int cellX = 0; cellX < mockResult.length - 2; cellX++) {
+                for (int cellY = 0; cellY < mockResult[cellX].length - 2; cellY++) {
+
+
+                    rectangle = new Rect(
+                            cellX,
+                            cellY,
+                            cellX + 1,
+                            cellY + 1);
+
+
+                    paintHeatMap.setColor(heatmapColorMapper((float) mockResult[cellX][cellY]));
 
 //                paintHeatMap.setColor(Color.GREEN);
 
-                paintHeatMap.setAlpha(128);
-                canvas.drawRect(rectangle, paintHeatMap);
+                    paintHeatMap.setAlpha(128);
+                    canvas.drawRect(rectangle, paintHeatMap);
+                }
             }
+
+            // draw APS
+            drawAP(canvas, 300, 500, "A");
+            drawAP(canvas, 500, 600, "B");
+
+
         }
+
+    }
+
+    private void drawAP(Canvas canvas, int x, int y, String label){
+        Paint paint = new Paint();
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.BLUE);
+        canvas.drawCircle(x, y , 50, paint);
+
+
+        paint.setColor(Color.WHITE);
+        paint.setTextSize(35);
+        paint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        canvas.drawText(label, x, y, paint);
     }
 
     public void clearView() {
@@ -423,6 +442,10 @@ public class DrawingImageView extends ImageView {
         this.readyButton = button;
     }
 
+    public void setCurrentState(STATE currentState) {
+        this.currentState = currentState;
+    }
+
     public List<PolyLine> getPolyLines() {
         List<PolyLine> polyLines = new ArrayList<>();
         if (outline.size() > 2) {
@@ -492,11 +515,18 @@ public class DrawingImageView extends ImageView {
         }
     }
 
+    // 0 - RED and 1 - GREEN
     protected int heatmapColorMapper(float heatmapValue) {
-        float colourValue = 1 * heatmapValue;
-        return Color.rgb(1f, colourValue, 0f);
+        float redComponent = 1;
+        float greenComponent = 1;
 
-
+        if(heatmapValue <= 0.5) {
+            greenComponent = 1f * (heatmapValue*2);
+        }
+        else {
+            redComponent = 1f * (1f-((heatmapValue-0.5f)*2));
+        }
+        return Color.rgb(redComponent, greenComponent, 0f);
     }
     
     private BoundingBox getBoundingBox(){
@@ -522,5 +552,42 @@ public class DrawingImageView extends ImageView {
         }
 
         return new BoundingBox(minX, maxX, minY, maxY);
+    }
+
+    private double[][] generateMockResult(){
+        float minX = outline.get(0).x;
+        float maxX = outline.get(0).x;
+        float minY = outline.get(0).y;
+        float maxY = outline.get(0).y;
+
+        for(PointF point: outline)
+        {
+            if (point.x < minX) {
+                minX=point.x;
+            }
+            if (point.x > maxX) {
+                maxX=point.x;
+            }
+            if (point.y < minY) {
+                minY=point.y;
+            }
+            if (point.y > maxY) {
+                maxY=point.y;
+            }
+        }
+
+
+        int length = (int)Math.ceil(maxX)+(int)Math.floor(minX);
+        int height = (int)Math.ceil(maxY)+(int)Math.floor(minY);
+
+        double array[][] = new double[length][height];
+
+        for(int i=0; i<length; i++) {
+            for(int j=0; j<height; j++){
+                array[i][j] = (double)j/(double)height;
+            }
+        }
+
+        return array;
     }
 }
