@@ -1,6 +1,7 @@
 package mt.com.go.go_hack_v1;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.DashPathEffect;
@@ -15,8 +16,14 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+
+import mt.com.go.go_hack_v1.apoe.model.plan.Material;
 
 enum STATE {
     BOUNDARY_BUILDING,
@@ -30,7 +37,6 @@ public class DrawingImageView extends ImageView {
     private ImageButton readyButton;
     private ImageButton undoButton;
     private PointF point;
-    int closingPolygonPointIndex;
     STATE currentState = STATE.BOUNDARY_BUILDING;
     private Paint paint = new Paint();
     private List<PointF> outline = new ArrayList<>();
@@ -41,8 +47,8 @@ public class DrawingImageView extends ImageView {
     protected int SCREEN_HEIGHT = 2000;//this.getHeight();
     protected int CELLS_Y = 200;
     protected int CELLS_X = 200;
-    protected int CELL_LENGTH_X = SCREEN_WIDTH/CELLS_X;
-    protected int CELL_LENGTH_Y = SCREEN_HEIGHT/CELLS_Y;
+    protected int CELL_LENGTH_X = SCREEN_WIDTH / CELLS_X;
+    protected int CELL_LENGTH_Y = SCREEN_HEIGHT / CELLS_Y;
     protected float[][] heatMap = new float[CELLS_Y][CELLS_X]; // mock
     protected Paint paintHeatMap = new Paint();
     protected Rect rectangle;
@@ -54,7 +60,7 @@ public class DrawingImageView extends ImageView {
     private static final int CELL_GRANULAR_INCREMENT = 50;
     private static final int THRESHOLD = 100;
 
-
+    private SharedPreferences preferences = getContext().getSharedPreferences("PREFS", Context.MODE_PRIVATE);
 
     public DrawingImageView(Context context) {
         super(context);
@@ -87,7 +93,7 @@ public class DrawingImageView extends ImageView {
             case STABLE: // will start building room (first point on room poligon)
                 // approximate x and y to be on the point collienear to the nearest line
                 PointF intersection = getPointOnPolygonOutline(x, y);
-                if(intersection != null) {
+                if (intersection != null) {
                     x = intersection.x;
                     y = intersection.y;
                 }
@@ -95,7 +101,7 @@ public class DrawingImageView extends ImageView {
             case WALLS_BUILDING:
                 // approximate x and y to be on the point collienear to the nearest line
                 PointF intersection2 = getPointOnPolygonOutline(x, y);
-                if(intersection2 != null) { // if (boundary wall is reached)
+                if (intersection2 != null) { // if (boundary wall is reached)
                     x = intersection2.x;
                     y = intersection2.y;
                 } else { // still building boundary wall
@@ -111,7 +117,7 @@ public class DrawingImageView extends ImageView {
                     case BOUNDARY_BUILDING:
                         point = new PointF(x, y);
                         outline.add(point);
-                        if(outline.size() >1){
+                        if (outline.size() > 1) {
                             undoButton.setImageResource(R.drawable.undo);
                             undoButton.setEnabled(true);
                         }
@@ -141,7 +147,6 @@ public class DrawingImageView extends ImageView {
                                 // snap last point to first point if within THRESHOLD
                                 outline.set(outline.size() - 1, new PointF(first.x, first.y));
 
-                                closingPolygonPointIndex = outline.size() - 1;
                                 Toast toast = Toast.makeText(this.getContext(),
                                         "Outline drawn successfully",
                                         Toast.LENGTH_SHORT);
@@ -159,7 +164,7 @@ public class DrawingImageView extends ImageView {
                     case STABLE:
                         if (isPointOnPolygonOutline(x, y)) {
                             // we are actually starting a new polygon
-                            PointF startingPoint = new PointF(x,y);
+                            PointF startingPoint = new PointF(x, y);
                             polygons.get(polygons.size() - 1).add(startingPoint);
                             invalidate();
 
@@ -170,7 +175,7 @@ public class DrawingImageView extends ImageView {
                             currentState = STATE.WALLS_BUILDING;
                         } else { // not on boundary
                             List<PointF> lastPoly = polygons.get(polygons.size() - 1);
-                            if(lastPoly.size() > 0){
+                            if (lastPoly.size() > 0) {
                                 lastPoly.remove(lastPoly.size() - 1);
                             }
                             invalidate();
@@ -338,9 +343,9 @@ public class DrawingImageView extends ImageView {
         int i;
         int j;
         boolean result = false;
-        for (i = 0, j = outline.size() - 1; i < closingPolygonPointIndex + 1; j = i++) {
-            if ((outline.get(i).y*(-1) > y*(-1)) != (outline.get(j).y*(-1) > y*(-1)) &&
-                    (x < (outline.get(j).x - outline.get(i).x) * (y*(-1) - outline.get(i).y*(-1)) / (outline.get(j).y*(-1) - outline.get(i).y*(-1)) + outline.get(i).x)) {
+        for (i = 0, j = outline.size() - 1; i < outline.size(); j = i++) {
+            if ((outline.get(i).y * (-1) > y * (-1)) != (outline.get(j).y * (-1) > y * (-1)) &&
+                    (x < (outline.get(j).x - outline.get(i).x) * (y * (-1) - outline.get(i).y * (-1)) / (outline.get(j).y * (-1) - outline.get(i).y * (-1)) + outline.get(i).x)) {
                 result = !result;
             }
         }
@@ -411,7 +416,7 @@ public class DrawingImageView extends ImageView {
                     float c2 = y3 - (m2 * x3);
 
                     // points of intersection of line 1 and line 2
-                    intersectionX = ((c2 - c1) / (m1-m2));
+                    intersectionX = ((c2 - c1) / (m1 - m2));
                     intersectionY = ((m1 * intersectionX) + c1);
                 } else if (y1 == y2) {
                     intersectionX = x3;
@@ -445,19 +450,19 @@ public class DrawingImageView extends ImageView {
         List<PolyLine> polyLines = new ArrayList<>();
         if (outline.size() > 2) {
             for (int i = 0; i <= outline.size() - 2; i++) {
-                Coordinate startingPoint = new Coordinate(outline.get(i).x, outline.get(i).y);
-                Coordinate endingPoint = new Coordinate(outline.get(i + 1).x, outline.get(i + 1).y);
-                PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, PolyLine.Material.CONCRETE);
+                PointF startingPoint = new PointF(outline.get(i).x, outline.get(i).y);
+                PointF endingPoint = new PointF(outline.get(i + 1).x, outline.get(i + 1).y);
+                PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, Material.CONCRETE);
                 polyLines.add(polyLine);
             }
         }
-        for(int i = 0; i < polygons.size(); i++){
+        for (int i = 0; i < polygons.size(); i++) {
             List<PointF> polygonOutline = polygons.get(0);
             if (polygonOutline.size() > 2) {
                 for (int j = 0; j <= polygonOutline.size() - 2; j++) {
-                    Coordinate startingPoint = new Coordinate(polygonOutline.get(j).x, polygonOutline.get(i).y);
-                    Coordinate endingPoint = new Coordinate(polygonOutline.get(i + 1).x, polygonOutline.get(i + 1).y);
-                    PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, PolyLine.Material.CONCRETE);
+                    PointF startingPoint = new PointF(polygonOutline.get(j).x, polygonOutline.get(j).y);
+                    PointF endingPoint = new PointF(polygonOutline.get(j + 1).x, polygonOutline.get(j + 1).y);
+                    PolyLine polyLine = new PolyLine(startingPoint, endingPoint, 1, Material.CONCRETE);
                     polyLines.add(polyLine);
                 }
             }
@@ -472,7 +477,7 @@ public class DrawingImageView extends ImageView {
                 undoButton.setImageResource(R.drawable.undo_grey);
                 undoButton.setEnabled(false);
             }
-            if(currentState == STATE.STABLE){
+            if (currentState == STATE.STABLE) {
                 currentState = STATE.BOUNDARY_BUILDING;
                 readyButton.setImageResource(R.drawable.forward_grey);
                 readyButton.setEnabled(false);
@@ -480,10 +485,10 @@ public class DrawingImageView extends ImageView {
             invalidate();
         } else {
             List<PointF> polygon = polygons.get(polygons.size() - 1);
-            if(!polygon.isEmpty()){
-                polygon.remove(polygon.size()-1);
+            if (!polygon.isEmpty()) {
+                polygon.remove(polygon.size() - 1);
                 invalidate();
-                if(polygon.isEmpty()){
+                if (polygon.isEmpty()) {
                     currentState = STATE.STABLE;
                     polygons.remove(polygons.size()-1);
                 } else {
@@ -492,7 +497,7 @@ public class DrawingImageView extends ImageView {
 
             } else if (polygons.size() != 1) {
                 List<PointF> previousPolygon = polygons.get(polygons.size() - 2);
-                previousPolygon.remove(previousPolygon.size()-1);
+                previousPolygon.remove(previousPolygon.size() - 1);
                 invalidate();
             } else {
                 outline.remove(outline.size()-1);
@@ -508,18 +513,17 @@ public class DrawingImageView extends ImageView {
 
 
     protected void generateHeatmap() {
-        for(int grid_y = 0; grid_y < CELLS_Y; grid_y++){
-            for(int grid_x = 0; grid_x < CELLS_X; grid_x++){
-                heatMap[grid_y][grid_x] = (float)grid_x/(float)CELLS_X;
+        for (int grid_y = 0; grid_y < CELLS_Y; grid_y++) {
+            for (int grid_x = 0; grid_x < CELLS_X; grid_x++) {
+                heatMap[grid_y][grid_x] = (float) grid_x / (float) CELLS_X;
             }
         }
     }
-
+    
     // 0 - RED and 1 - GREEN
     protected int heatmapColorMapper(float heatmapValue) {
         float redComponent = 1;
         float greenComponent = 1;
-
         if(heatmapValue <= 0.5) {
             greenComponent = 1f * (heatmapValue*2);
     }
@@ -528,30 +532,91 @@ public class DrawingImageView extends ImageView {
         }
         return Color.rgb(redComponent, greenComponent, 0f);
     }
-    
+
     private BoundingBox getBoundingBox(){
         float minX = 0;
         float maxX = 0;
         float minY = 0;
         float maxY = 0;
-        
-        for(PointF point: outline)
-        {
+
+        for (PointF point : outline) {
             if (point.x < minX) {
-                minX=point.x;
+                minX = point.x;
             }
             if (point.x > maxX) {
-                maxX=point.x;
+                maxX = point.x;
             }
             if (point.y < minY) {
-                minY=point.y;
+                minY = point.y;
             }
             if (point.y > maxY) {
-                maxY=point.y;
+                maxY = point.y;
             }
         }
 
         return new BoundingBox(minX, maxX, minY, maxY);
+    }
+
+    public void saveState() {
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putString("CURRENT_STATE", currentState.name());
+        Gson gson = new Gson();
+        String outlineString = gson.toJson(outline);
+        editor.putString("OUTLINE", outlineString);
+        String polygonString = gson.toJson(polygons);
+        editor.putString("POLYGONS", polygonString);
+        editor.commit();
+    }
+
+    public void loadState() {
+        Gson gson = new Gson();
+        currentState = Enum.valueOf(STATE.class, preferences.getString("CURRENT_STATE", STATE.BOUNDARY_BUILDING.name()));
+        Type type = new TypeToken<ArrayList<PointF>>() {
+        }.getType();
+        outline = gson.fromJson(preferences.getString("OUTLINE", "{}"), type);
+        type = new TypeToken<ArrayList<ArrayList<PointF>>>() {
+        }.getType();
+        polygons = gson.fromJson(preferences.getString("POLYGONS", "{}"), type);
+        invalidate();
+    }
+
+    public void loadTemplate() {
+        currentState = STATE.STABLE;
+        outline = new ArrayList<>();
+        outline.add(new PointF(200, 300));
+        outline.add(new PointF(900, 300));
+        outline.add(new PointF(900, 1800));
+        outline.add(new PointF(200, 1800));
+        outline.add(new PointF(200, 300));
+        polygons = new ArrayList<>();
+        List<PointF> room1 = new ArrayList<>();
+        room1.add(new PointF(750, 300));
+        room1.add(new PointF(750, 1150));
+        room1.add(new PointF(900, 1150));
+        List<PointF> room2 = new ArrayList<>();
+        room2.add(new PointF(500, 300));
+        room2.add(new PointF(500, 600));
+        room2.add(new PointF(200, 600));
+        List<PointF> room3 = new ArrayList<>();
+        room3.add(new PointF(550, 1800));
+        room3.add(new PointF(550, 1450));
+        room3.add(new PointF(900, 1450));
+        List<PointF> room4 = new ArrayList<>();
+        room4.add(new PointF(200, 1450));
+        room4.add(new PointF(550, 1450));
+        room4.add(new PointF(550, 1150));
+        room4.add(new PointF(200, 1150));
+        List<PointF> room5 = new ArrayList<>();
+        room5.add(new PointF(200, 650));
+        room5.add(new PointF(600, 650));
+        room5.add(new PointF(600, 1050));
+        room5.add(new PointF(200, 1050));
+        polygons.add(room1);
+        polygons.add(room2);
+        polygons.add(room3);
+        polygons.add(room4);
+        polygons.add(room5);
+        invalidate();
     }
 
     private double[][] generateMockResult(){
