@@ -16,6 +16,8 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,6 +25,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import mt.com.go.go_hack_v1.apoe.OptimizationEngine;
+import mt.com.go.go_hack_v1.apoe.model.AccessPoint;
 import mt.com.go.go_hack_v1.apoe.model.plan.Material;
 import mt.com.go.go_hack_v1.apoe.model.plan.UiWall;
 import mt.com.go.go_hack_v1.apoe.model.plan.Wall;
@@ -30,7 +33,7 @@ import mt.com.go.go_hack_v1.apoe.model.recommendation.Recommendation;
 
 public class MainActivity extends AppCompatActivity {
 
-    boolean isMock = true;
+    boolean isMock = false;
 
 
     @Override
@@ -68,8 +71,11 @@ public class MainActivity extends AppCompatActivity {
             readyButton.setImageResource(R.drawable.forward);
         } else {
 
-            readyButton.setEnabled(false);
-            readyButton.setImageResource(R.drawable.forward_grey);
+//            readyButton.setEnabled(false);
+//            readyButton.setImageResource(R.drawable.forward_grey);
+
+            readyButton.setEnabled(true);
+            readyButton.setImageResource(R.drawable.forward);
         }
         view.setReadyButton(readyButton);
         view.setUndoButton(undoButton);
@@ -130,6 +136,12 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         Recommendation recommendation = engine.recommendation;
+
+
+
+                        view.setHeatMapGlobal( recommendation.getSignalStrengthHeatMap());
+                        view.setAps(Arrays.asList(recommendation.getAccessPoints()));
+
                         view.setCurrentState(STATE.READY);
                         view.invalidate();
 //                    Intent mockIntent = new Intent(getApplicationContext(), MockService.class);

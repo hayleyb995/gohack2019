@@ -27,6 +27,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import mt.com.go.go_hack_v1.apoe.model.AccessPoint;
 import mt.com.go.go_hack_v1.apoe.model.plan.Material;
 
 enum STATE {
@@ -46,14 +47,16 @@ public class DrawingImageView extends ImageView {
     private List<PointF> outline = new ArrayList<>();
     private List<List<PointF>> polygons = new ArrayList<>();
     private PointF currentPoint;
+//
+//    protected int SCREEN_WIDTH = 1200;//this.getWidth();
+//    protected int SCREEN_HEIGHT = 2000;//this.getHeight();
+//    protected int CELLS_Y = 200;
+//    protected int CELLS_X = 200;
+//    protected int CELL_LENGTH_X = SCREEN_WIDTH / CELLS_X;
+//    protected int CELL_LENGTH_Y = SCREEN_HEIGHT / CELLS_Y;
+//    protected float[][] heatMap = new float[CELLS_Y][CELLS_X]; // mock
 
-    protected int SCREEN_WIDTH = 1200;//this.getWidth();
-    protected int SCREEN_HEIGHT = 2000;//this.getHeight();
-    protected int CELLS_Y = 200;
-    protected int CELLS_X = 200;
-    protected int CELL_LENGTH_X = SCREEN_WIDTH / CELLS_X;
-    protected int CELL_LENGTH_Y = SCREEN_HEIGHT / CELLS_Y;
-    protected float[][] heatMap = new float[CELLS_Y][CELLS_X]; // mock
+
     protected Paint paintHeatMap = new Paint();
     protected Rect rectangle;
 
@@ -61,27 +64,35 @@ public class DrawingImageView extends ImageView {
     float offsetY;
 
     private static final int CELL_INCREMENT = 100;
-    private static final int CELL_GRANULAR_INCREMENT = 50;
+    private static final int CELL_GRANULAR_INCREMENT = 75;
     private static final int THRESHOLD = 100;
+
+    double[][] heatMapGlobal;
+    List<AccessPoint> aps = new ArrayList();
+
+    public void setHeatMapGlobal(double[][] heatMapGlobal) {
+        this.heatMapGlobal = heatMapGlobal;
+    }
+
+    public void setAps(List<AccessPoint> aps) {
+        this.aps = aps;
+    }
 
     private SharedPreferences preferences = getContext().getSharedPreferences("PREFS", Context.MODE_PRIVATE);
 
     public DrawingImageView(Context context) {
         super(context);
         paint.setStrokeWidth(5);
-        generateHeatmap();
     }
 
     public DrawingImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
         paint.setStrokeWidth(5);
-        generateHeatmap();
     }
 
     public DrawingImageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         paint.setStrokeWidth(5);
-        generateHeatmap();
     }
 
     @Override
@@ -100,17 +111,22 @@ public class DrawingImageView extends ImageView {
                 if (intersection != null) {
                     x = intersection.x;
                     y = intersection.y;
+
+                    offsetX = x%CELL_GRANULAR_INCREMENT;
+                    offsetY = y%CELL_GRANULAR_INCREMENT;
                 }
                 break;
             case WALLS_BUILDING:
+
+                x = offsetX + Math.round((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
+                y = offsetY + Math.round((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
+
                 // approximate x and y to be on the point collienear to the nearest line
                 PointF intersection2 = getPointOnPolygonOutline(x, y);
                 if (intersection2 != null) { // if (boundary wall is reached)
                     x = intersection2.x;
                     y = intersection2.y;
                 } else { // still building boundary wall
-                    x = offsetX + Math.round((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
-                    y = offsetY + Math.round((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
                 }
                 break;
         }
@@ -172,10 +188,11 @@ public class DrawingImageView extends ImageView {
                             polygons.get(polygons.size() - 1).add(startingPoint);
                             invalidate();
 
-                            Toast toast = Toast.makeText(this.getContext(),
-                                    "Starting room drawing",
-                                    Toast.LENGTH_LONG);
-                            toast.show();
+                            //TODO remove toast?
+//                            Toast toast = Toast.makeText(this.getContext(),
+//                                    "Starting room drawing",
+//                                    Toast.LENGTH_LONG);
+//                            toast.show();
                             currentState = STATE.WALLS_BUILDING;
                         } else { // not on boundary
                             List<PointF> lastPoly = polygons.get(polygons.size() - 1);
@@ -188,11 +205,12 @@ public class DrawingImageView extends ImageView {
                         break;
                     case WALLS_BUILDING:
                          if (isPointOnPolygonOutline(x, y)) {
-                            Toast toast = Toast.makeText(this.getContext(),
-                                    "Room completed",
-                                    Toast.LENGTH_LONG);
 
-                            toast.show();
+                             //TODO remove toast?
+//                            Toast toast = Toast.makeText(this.getContext(),
+//                                    "Room completed",
+//                                    Toast.LENGTH_LONG);
+//                            toast.show();
                             currentState = STATE.STABLE;
 
                             invalidate();
@@ -225,9 +243,8 @@ public class DrawingImageView extends ImageView {
         }
 
         // paint granular grid only in state 2
-        //TODO define offset x and offset y
-        float xOffset = (float) offsetX;
-        float yOffset = (float) offsetY;
+        float xOffset = offsetX;
+        float yOffset = offsetY;
 
         if (currentState == STATE.WALLS_BUILDING) {
             paint.setColor(Color.GRAY);
@@ -288,42 +305,89 @@ public class DrawingImageView extends ImageView {
             }
         }
 
+
+
         if(currentState == STATE.READY) {
-            double[][] mockResult = generateMockResult();
-            for (int cellX = 0; cellX < mockResult.length - 2; cellX++) {
-                for (int cellY = 240; cellY < mockResult[cellX].length - 2; cellY++) {
+
+            double[][] heatMap = heatMapGlobal;
+
+            for (int cellX = 0; cellX < heatMap.length - 2; cellX++) {
+                for (int cellY = (240 / 10); cellY < heatMap[cellX].length - 2; cellY++) {
+
+                    // TODO map dB to linear scale?
+                    // dB → gain-multiplier: https://sound.stackexchange.com/questions/38722/convert-db-value-to-linear-scale
+//                    double linearMeasure = Math.pow(10, (heatMap[cellX][cellY])/20);
+//                    double minInput = Math.pow(10, (-100/20));
+//                    double maxInput = Math.pow(10, (0.4/20));
+
+                    double linearMeasure = heatMap[cellX][cellY];
+                    double minInput = -100;
+                    double maxInput = 0.4;
+
+                    double index = normalize(linearMeasure, minInput, maxInput, 0d, 1d);
 
                     rectangle = new Rect(
-                            cellX,
-                            cellY,
-                            cellX + 1,
-                            cellY + 1);
+                            cellX * 10,
+                            cellY * 10,
+                            cellX * 10 + 10,
+                            cellY * 10 + 10);
 
-                    paintHeatMap.setColor(heatmapColorMapper((float) mockResult[cellX][cellY]));
-//                paintHeatMap.setColor(Color.GREEN);
+                    paintHeatMap.setColor(heatmapColorMapper((float) index));
                     paintHeatMap.setAlpha(128);
                     canvas.drawRect(rectangle, paintHeatMap);
                 }
             }
+
+
+            for (int i = 0; i < aps.size(); i++) {
+                AccessPoint ap = aps.get(i);
+                drawAP(canvas, ap.getCurrentGridPoint().getRow()*10, ap.getCurrentGridPoint().getColumn()*10, ""+i);
+            }
+
+
+            //TODO uncomment for mock data
+//            double[][] mockResult = generateMockResult();
+//
+//            for (int cellX = 0; cellX < mockResult.length - 2; cellX++) {
+//                for (int cellY = 240; cellY < mockResult[cellX].length - 2; cellY++) {
+//
+//                    rectangle = new Rect(
+//                            cellX,
+//                            cellY,
+//                            cellX + 1,
+//                            cellY + 1);
+//
+//                    paintHeatMap.setColor(heatmapColorMapper((float) mockResult[cellX][cellY]));
+////                paintHeatMap.setColor(Color.GREEN);
+//                    paintHeatMap.setAlpha(128);
+//                    canvas.drawRect(rectangle, paintHeatMap);
+//                }
+//            }
+
             // draw APS
-            drawAP(canvas, 300, 500, "A");
-            drawAP(canvas, 700, 1350, "B");
+//            drawAP(canvas, 300, 500, "A");
+//            drawAP(canvas, 700, 1350, "B");
 
         }
 
 
     }
 
+
+    double normalize(double x, double in_min, double in_max, double out_min, double out_max)
+    {
+        if(x<in_min) {
+            x = in_min;
+        } else if (x>in_max) {
+            x = in_max;
+        }
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
     private void drawAP(Canvas canvas, int x, int y, String label){
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.BLUE);
-//        canvas.drawCircle(x, y , 50, paint);
-
-
-        Drawable d = getResources().getDrawable(R.drawable.wifi_point, null);
-//        d.setBounds(x, y, x+1000, y+1000);
-//        d.draw(canvas);
 
         Resources res = getResources();
         Bitmap bitmap = BitmapFactory.decodeResource(res, R.drawable.wifi_point);
@@ -368,20 +432,62 @@ public class DrawingImageView extends ImageView {
             return false;
         }
 
+        // is point on plan outline
         for (int i = 0; i < outline.size() - 1; i++) {
             float x1 = outline.get(i).x;
             float y1 = outline.get(i).y;
             float x2 = outline.get(i + 1).x;
             float y2 = outline.get(i + 1).y;
 
-            float a = y1 - y2;
-            float b = x2 - x1;
-            float c = ((x1 - x2) * y1) + ((y2 - y1) * x1);
-
-            if (circleIntersectsLine(a, b, c, x, y, 30)) {
+            if(isPointOnLine(x, y, x1, y1, x2, y2)) {
                 return true;
             }
         }
+
+        // is point on rooms outline
+        for (int i = 0; i < polygons.size() - 1; i++) { //loop through all rooms points
+
+
+            for (int j = 0; j < polygons.get(i).size() - 1; j++) { //loop through all boundary points
+                float x1 = polygons.get(i).get(j).x;
+                float y1 = polygons.get(i).get(j).y;
+                float x2 = polygons.get(i).get(j + 1).x;
+                float y2 = polygons.get(i).get(j + 1).y;
+
+
+                if(isPointOnLine(x, y, x1, y1, x2, y2)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isPointOnLine(float x, float y, float x1, float y1, float x2, float y2) {
+        float a = y1 - y2;
+        float b = x2 - x1;
+        float c = ((x1 - x2) * y1) + ((y2 - y1) * x1);
+
+        if (circleIntersectsLine(a, b, c, x, y, 15)) {
+
+            // confirm that the point is within line's limits
+            float checkX1 = x-x1;
+            float checkX2 = x-x2;
+
+            float checkY1 = y-y1;
+            float checkY2 = y-y2;
+
+            if(!(
+                    ((checkX1>=0 && checkX2<=0) || (checkX1<=0 && checkX2>=0)) &&
+                            ((checkY1>=0 && checkY2<=0) || (checkY1<=0 && checkY2>=0))
+            )){
+                return false;
+            }
+
+            return true;
+        }
+
 
         return false;
     }
@@ -402,6 +508,34 @@ public class DrawingImageView extends ImageView {
             float y1 = outline.get(i).y * (-1);
             float x2 = outline.get(i + 1).x;
             float y2 = outline.get(i + 1).y * (-1);
+
+            PointF point = getPointOnLine(x, y, x1, y1, x2, y2);
+            if(point != null) {
+                return point;
+            }
+        }
+
+        for (int i = 0; i < polygons.size() - 1; i++) { //loop through all rooms points
+
+
+            for (int j = 0; j < polygons.get(i).size() - 1; j++) { //loop through all boundary points
+                float x1 = polygons.get(i).get(j).x;
+                float y1 = polygons.get(i).get(j).y * (-1);
+                float x2 = polygons.get(i).get(j + 1).x;
+                float y2 = polygons.get(i).get(j + 1).y * (-1);
+
+                PointF point = getPointOnLine(x, y, x1, y1, x2, y2);
+                if(point != null) {
+                    return point;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private PointF getPointOnLine(float x, float y, float x1, float y1, float x2, float y2) {
+
 
             float a = y1 - y2;
             float b = x2 - x1;
@@ -434,13 +568,37 @@ public class DrawingImageView extends ImageView {
                     intersectionX = x1;
                     intersectionY = y3;
                 }
+
+
+                // confirm that the point is within line's limits
+                float checkX1 = intersectionX-x1;
+                float checkX2 = intersectionX-x2;
+
+                float checkY1 = intersectionY-y1;
+                float checkY2 = intersectionY-y2;
+
+                if(!(
+                        ((checkX1>=0 && checkX2<=0) || (checkX1<=0 && checkX2>=0)) &&
+                        ((checkY1>=0 && checkY2<=0) || (checkY1<=0 && checkY2>=0))
+                )){
+                    return null;
+                }
+
                 intersectionY *= (-1); //verse y mapping;
 
                 return new PointF(intersectionX, intersectionY);
             }
-        }
 
         return null;
+    }
+
+
+    public double calculateDistanceBetweenPoints(
+            double x1,
+            double y1,
+            double x2,
+            double y2) {
+        return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 
     public void setUndoButton(ImageButton button){
@@ -520,50 +678,11 @@ public class DrawingImageView extends ImageView {
         }
     }
 
-
-    protected void generateHeatmap() {
-        for (int grid_y = 0; grid_y < CELLS_Y; grid_y++) {
-            for (int grid_x = 0; grid_x < CELLS_X; grid_x++) {
-                heatMap[grid_y][grid_x] = (float) grid_x / (float) CELLS_X;
-            }
-        }
-    }
     
     // 0 - RED and 1 - GREEN
     protected int heatmapColorMapper(float heatmapValue) {
-        float redComponent = 1;
-        float greenComponent = 1;
-        if(heatmapValue <= 0.5) {
-            greenComponent = 1f * (heatmapValue*2);
-    }
-        else {
-            redComponent = 1f * (1f-((heatmapValue-0.5f)*2));
-        }
-        return 1-Color.rgb(redComponent, greenComponent, 0f);
-    }
-
-    private BoundingBox getBoundingBox(){
-        float minX = 0;
-        float maxX = 0;
-        float minY = 0;
-        float maxY = 0;
-
-        for (PointF point : outline) {
-            if (point.x < minX) {
-                minX = point.x;
-            }
-            if (point.x > maxX) {
-                maxX = point.x;
-            }
-            if (point.y < minY) {
-                minY = point.y;
-            }
-            if (point.y > maxY) {
-                maxY = point.y;
-            }
-        }
-
-        return new BoundingBox(minX, maxX, minY, maxY);
+        float hsv[] = {heatmapValue*120, 1f, 1f};
+        return Color.HSVToColor(hsv);
     }
 
     public void saveState() {
@@ -682,8 +801,6 @@ public class DrawingImageView extends ImageView {
 
                 array[i][j] = smallerDistance;
 
-
-//                array[i][j] = (double)j/(double)height;
             }
         }
 
@@ -697,17 +814,6 @@ public class DrawingImageView extends ImageView {
         }
 
 
-//        drawAP(canvas, 300, 500, "A");
-//        drawAP(canvas, 700, 1350, "B");
-
         return array;
-    }
-
-    public double calculateDistanceBetweenPoints(
-            double x1,
-            double y1,
-            double x2,
-            double y2) {
-        return Math.sqrt((y2 - y1) * (y2 - y1) + (x2 - x1) * (x2 - x1));
     }
 }
