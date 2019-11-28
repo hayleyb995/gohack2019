@@ -320,11 +320,7 @@ public class DrawingImageView extends ImageView {
 //                    double minInput = Math.pow(10, (-100/20));
 //                    double maxInput = Math.pow(10, (0.4/20));
 
-                    double linearMeasure = heatMap[cellX][cellY];
-                    double minInput = -100;
-                    double maxInput = 0.4;
 
-                    double index = normalize(linearMeasure, minInput, maxInput, 0d, 1d);
 
                     rectangle = new Rect(
                             cellX * 10,
@@ -332,6 +328,7 @@ public class DrawingImageView extends ImageView {
                             cellX * 10 + 10,
                             cellY * 10 + 10);
 
+                    double index = normalize(heatMap[cellX][cellY]);
                     paintHeatMap.setColor(heatmapColorMapper((float) index));
                     paintHeatMap.setAlpha(128);
                     canvas.drawRect(rectangle, paintHeatMap);
@@ -370,6 +367,23 @@ public class DrawingImageView extends ImageView {
 
         }
 
+
+    }
+
+    double normalize(double dbLevel) {
+
+        if (dbLevel < -90) {
+            return 0d;
+        } else if (dbLevel < -80) {
+            return normalize(dbLevel, -90, -80, 0d, 0.25d);
+        } else if (dbLevel < -70) {
+            return normalize(dbLevel, -80, -70, 0.25d, 0.5d);
+        } else if (dbLevel < -60) {
+            return normalize(dbLevel, -70, -60, 0.5d, 0.75d);
+        } else if (dbLevel < -50) {
+            return normalize(dbLevel, -60, -50, 0.75d, 1d);
+        }
+        return 1d;
 
     }
 
