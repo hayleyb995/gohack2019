@@ -14,6 +14,7 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -118,8 +119,8 @@ public class DrawingImageView extends ImageView {
                 break;
             case WALLS_BUILDING:
 
-                x = offsetX + Math.round((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
-                y = offsetY + Math.round((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
+                x = Math.round(offsetX + Math.round((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT);
+                y = Math.round(offsetY + Math.round((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT);
 
                 // approximate x and y to be on the point collienear to the nearest line
                 PointF intersection2 = getPointOnPolygonOutline(x, y);
@@ -128,39 +129,69 @@ public class DrawingImageView extends ImageView {
                     y = intersection2.y;
                 } else { // still building boundary wall
                 }
+
+
                 break;
         }
+
+        currentPoint = new PointF(x, y);
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 switch (currentState) {
                     case BOUNDARY_BUILDING:
-                        point = new PointF(x, y);
-                        outline.add(point);
+                        if (outline.size() == 0) {
+                            point = new PointF(x, y);
+                            outline.add(point);
+                        }
+                        break;
+                    case STABLE:
+                        polygons.add(new ArrayList<>());
+                        if (polygons.size() > 0) {
+                            if (polygons.get(polygons.size() - 1).size() == 0 && (isPointOnPolygonOutline(x, y))) {
+                                point = new PointF(x, y);
+                                polygons.get(polygons.size() - 1).add(point);
+                                currentState = STATE.WALLS_BUILDING;
+                            }
+                        }
+                        break;
+
+
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                boolean valid = false;
+                switch (currentState) {
+                    case BOUNDARY_BUILDING:
+                        if (outline.size() > 0) {
+                            if (!(outline.size() == 1 && outline.get(0).x == x && outline.get(0).y == y)) {
+                                point = new PointF(x, y);
+                                outline.add(point);
+                            }
+                        }
                         if (outline.size() > 1) {
                             undoButton.setImageResource(R.drawable.undo);
                             undoButton.setEnabled(true);
                         }
                         break;
                     case STABLE:
-                        point = new PointF(x, y);
-                        polygons.add(new ArrayList<PointF>());
                         break;
                     case WALLS_BUILDING:
                         point = new PointF(x, y);
-                        polygons.get(polygons.size() - 1).add(point);
+                        if (polygons.size() > 0) {
+                            List<PointF> lastPolygon = polygons.get(polygons.size() - 1);
+                            if (!(lastPolygon.size() == 1 && lastPolygon.get(0).x == x && lastPolygon.get(0).y == y)) {
+                                polygons.get(polygons.size() - 1).add(new PointF(x, y));
+                            }
+                        }
+                        //polygons.get(polygons.size() - 1).add(point);
                         break;
                 }
 
-                invalidate();
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                boolean valid = false;
-
                 switch (currentState) {
                     case BOUNDARY_BUILDING:
-                        if (outline.size() > 1) { // if at least 2 points in boundary wall
+                        if (outline.size() > 1) { // if at least 1 point in boundary wall
                             PointF last = outline.get(outline.size() - 1);
                             PointF first = outline.get(0);
                             if (Math.abs(last.x - first.x) < THRESHOLD && Math.abs(last.y - first.y) < THRESHOLD) {
@@ -176,31 +207,33 @@ public class DrawingImageView extends ImageView {
                                 readyButton.setImageResource(R.drawable.forward);
                                 readyButton.setEnabled(true);
                             }
-                            invalidate();
                         }
 
-                        currentPoint = null;
                         break;
                     case STABLE:
-                        if (isPointOnPolygonOutline(x, y)) {
-                            // we are actually starting a new polygon
-                            PointF startingPoint = new PointF(x, y);
-                            polygons.get(polygons.size() - 1).add(startingPoint);
-                            invalidate();
-
-                            //TODO remove toast?
-//                            Toast toast = Toast.makeText(this.getContext(),
-//                                    "Starting room drawing",
-//                                    Toast.LENGTH_LONG);
-//                            toast.show();
-                            currentState = STATE.WALLS_BUILDING;
-                        } else { // not on boundary
-                            List<PointF> lastPoly = polygons.get(polygons.size() - 1);
-                            if (lastPoly.size() > 0) {
-                                lastPoly.remove(lastPoly.size() - 1);
-                            }
-                            invalidate();
-                        }
+//                        if (isPointOnPolygonOutline(x, y)) {
+//                            // we are actually starting a new polygon
+//                            PointF startingPoint = new PointF(x, y);
+//
+//                            if (polygons.size() > 0) {
+//                                List<PointF> lastPolygon = polygons.get(polygons.size() - 1);
+//                                if (!(lastPolygon.size() == 1 && lastPolygon.get(0).x == x && lastPolygon.get(0).y == y)) {
+//                                    polygons.get(polygons.size() - 1).add(startingPoint);
+//                                }
+//                            }
+//
+//                            //TODO remove toast?
+////                            Toast toast = Toast.makeText(this.getContext(),
+////                                    "Starting room drawing",
+////                                    Toast.LENGTH_LONG);
+////                            toast.show();
+//                            currentState = STATE.WALLS_BUILDING;
+//                        } else { // not on boundary
+//                            List<PointF> lastPoly = polygons.get(polygons.size() - 1);
+//                            if (lastPoly.size() > 0) {
+//                                lastPoly.remove(lastPoly.size() - 1);
+//                            }
+//                        }
 
                         break;
                     case WALLS_BUILDING:
@@ -213,7 +246,6 @@ public class DrawingImageView extends ImageView {
 //                            toast.show();
                             currentState = STATE.STABLE;
 
-                            invalidate();
                         } else if (isPointInPolygon(x, y)) {
                              //do nothing
                         } else { // if point is outside polygon
@@ -224,7 +256,12 @@ public class DrawingImageView extends ImageView {
 
                         break;
                 }
+
+                currentPoint = null;
         }
+
+        invalidate();
+
         return true;
     }
 
@@ -305,7 +342,29 @@ public class DrawingImageView extends ImageView {
             }
         }
 
+        if (currentPoint != null) {
+            PointF lastPoint = null;
 
+            if (polygons.size() > 0) {
+                for (int i = polygons.size() - 1; i >= 0; i--) {
+                    if (polygons.get(i).size() > 0) {
+                        lastPoint = polygons.get(i).get(polygons.get(i).size() - 1);
+                        break;
+                    }
+                }
+            }
+
+            if (lastPoint == null) {
+                if (outline.size() > 0) {
+                    lastPoint = outline.get(outline.size() - 1);
+                }
+            }
+
+            if (lastPoint != null && currentState != STATE.STABLE) {
+                paint.setColor(Color.GREEN);
+                canvas.drawLine(lastPoint.x, lastPoint.y, currentPoint.x, currentPoint.y, paint);
+            }
+        }
 
         if(currentState == STATE.READY) {
 
@@ -561,7 +620,7 @@ public class DrawingImageView extends ImageView {
             float intersectionX;
             float intersectionY;
 
-            if (circleIntersectsLine(a, b, c, x3, y3, 50)) {
+            if (circleIntersectsLine(a, b, c, x3, y3, 15)) {
                 //find coordinate of interest
                 if (x1 != x2 && y1 != y2) {
                     // line 1
@@ -692,7 +751,7 @@ public class DrawingImageView extends ImageView {
         }
     }
 
-    
+
     // 0 - RED and 1 - GREEN
     protected int heatmapColorMapper(float heatmapValue) {
         float hsv[] = {heatmapValue*120, 1f, 1f};
