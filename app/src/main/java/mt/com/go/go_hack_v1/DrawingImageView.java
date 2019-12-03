@@ -50,6 +50,8 @@ public class DrawingImageView extends ImageView {
     private PointF previousLastPoint;
     private PointF targetPointLoc;
 
+    private final DashPathEffect dashedEffect = new DashPathEffect(new float[]{5, 10, 15, 20}, 0);
+
 //
 //    protected int SCREEN_WIDTH = 1200;//this.getWidth();
 //    protected int SCREEN_HEIGHT = 2000;//this.getHeight();
@@ -61,7 +63,6 @@ public class DrawingImageView extends ImageView {
 
 
     protected Paint paintHeatMap = new Paint();
-    protected Rect rectangle;
 
     float offsetX;
     float offsetY;
@@ -109,6 +110,11 @@ public class DrawingImageView extends ImageView {
     }
 
     @Override
+    public boolean performClick() {
+        return super.performClick();
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
@@ -139,7 +145,6 @@ public class DrawingImageView extends ImageView {
                 if (intersection2 != null) { // if (boundary wall is reached)
                     x = intersection2.x;
                     y = intersection2.y;
-                } else { // still building boundary wall
                 }
                 break;
         }
@@ -151,8 +156,10 @@ public class DrawingImageView extends ImageView {
                 switch (currentState) {
                     case BOUNDARY_BUILDING:
                         PointF point = new PointF(x, y);
-                        outline.add(point);
-                        updatePreviewState(point);
+                        if (outline.isEmpty()) {
+                            outline.add(point);
+                            updatePreviewState(point);
+                        }
                         if (outline.size() > 1) {
                             undoButton.setImageResource(R.drawable.undo);
                             undoButton.setEnabled(true);
@@ -161,10 +168,12 @@ public class DrawingImageView extends ImageView {
                     case STABLE:
                         polygons.add(new ArrayList<>());
                         if (isPointOnPolygonOutline(x, y)) {
-                            // we are actually starting a new polygon
-                            PointF startingPoint = new PointF(x, y);
-                            polygons.get(polygons.size() - 1).add(startingPoint);
-                            updatePreviewState(startingPoint);
+                            if (polygons.get(polygons.size() - 1).isEmpty()) {
+                                // we are actually starting a new polygon
+                                PointF startingPoint = new PointF(x, y);
+                                polygons.get(polygons.size() - 1).add(startingPoint);
+                                updatePreviewState(startingPoint);
+                            }
 
                             currentState = STATE.WALLS_BUILDING;
                         } else { // not on boundary
@@ -185,6 +194,7 @@ public class DrawingImageView extends ImageView {
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
+                this.performClick();
 
                 targetPointLoc = null;
 
@@ -207,22 +217,27 @@ public class DrawingImageView extends ImageView {
                         }
 
                         if (last != null && Math.abs(last.x - first.x) < THRESHOLD && Math.abs(last.y - first.y) < THRESHOLD) {
-                            // snap last point to first point if within THRESHOLD
-                            point = new PointF(first.x, first.y);
-                            outline.set(outline.size() - 1, point);
-                            lastPoint = point;
+                            if (outline.size() > 2) {
+                                // snap last point to first point if within THRESHOLD
+                                point = new PointF(first.x, first.y);
+                                outline.set(outline.size() - 1, point);
+                                lastPoint = point;
 
-                            Toast toast = Toast.makeText(this.getContext(),
-                                    "Outline drawn successfully",
-                                    Toast.LENGTH_SHORT);
-                            toast.show();
+                                Toast toast = Toast.makeText(this.getContext(),
+                                        "Outline drawn successfully",
+                                        Toast.LENGTH_SHORT);
+                                toast.show();
 
-                            currentState = STATE.STABLE;
+                                currentState = STATE.STABLE;
 
-                            readyButton.setImageResource(R.drawable.forward);
-                            readyButton.setEnabled(true);
+                                readyButton.setImageResource(R.drawable.forward);
+                                readyButton.setEnabled(true);
+                            } else {
+                                outline.remove(outline.size() - 1);
+                                undoButton.setImageResource(R.drawable.undo_grey);
+                                undoButton.setEnabled(false);
+                            }
                         }
-
 
                         break;
                     case STABLE:
@@ -303,7 +318,7 @@ public class DrawingImageView extends ImageView {
         if (currentState == STATE.STABLE) {
             paint.setColor(Color.BLUE);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setPathEffect(new DashPathEffect(new float[]{5, 10, 15, 20}, 0));
+            paint.setPathEffect(dashedEffect);
 
         } else {
             paint.setColor(Color.BLUE);
@@ -364,18 +379,10 @@ public class DrawingImageView extends ImageView {
 //                    double minInput = Math.pow(10, (-100/20));
 //                    double maxInput = Math.pow(10, (0.4/20));
 
-
-
-                    rectangle = new Rect(
-                            cellX * 10,
-                            cellY * 10,
-                            cellX * 10 + 10,
-                            cellY * 10 + 10);
-
                     double index = normalize(heatMap[cellX][cellY]);
                     paintHeatMap.setColor(heatmapColorMapper((float) index));
                     paintHeatMap.setAlpha(128);
-                    canvas.drawRect(rectangle, paintHeatMap);
+                    canvas.drawRect(cellX * 10, cellY * 10, cellX * 10 + 10, cellY * 10 + 10, paintHeatMap);
                 }
             }
 
@@ -384,7 +391,6 @@ public class DrawingImageView extends ImageView {
                 AccessPoint ap = aps.get(i);
                 drawAP(canvas, ap.getCurrentGridPoint().getRow()*10, ap.getCurrentGridPoint().getColumn()*10, ""+i);
             }
-
 
             //TODO uncomment for mock data
 //            double[][] mockResult = generateMockResult();
@@ -536,16 +542,9 @@ public class DrawingImageView extends ImageView {
             float checkY1 = y-y1;
             float checkY2 = y-y2;
 
-            if(!(
-                    ((checkX1>=0 && checkX2<=0) || (checkX1<=0 && checkX2>=0)) &&
-                            ((checkY1>=0 && checkY2<=0) || (checkY1<=0 && checkY2>=0))
-            )){
-                return false;
-            }
-
-            return true;
+            return ((checkX1 >= 0 && checkX2 <= 0) || (checkX1 <= 0 && checkX2 >= 0)) &&
+                    ((checkY1 >= 0 && checkY2 <= 0) || (checkY1 <= 0 && checkY2 >= 0));
         }
-
 
         return false;
     }
@@ -599,13 +598,12 @@ public class DrawingImageView extends ImageView {
         float b = x2 - x1;
         float c = ((x1 - x2) * y1) + ((y2 - y1) * x1);
 
-        float x3 = x;
         float y3 = y * (-1);
 
         float intersectionX;
         float intersectionY;
 
-        if (circleIntersectsLine(a, b, c, x3, y3, 50)) {
+        if (circleIntersectsLine(a, b, c, x, y3, 50)) {
             //find coordinate of interest
             if (x1 != x2 && y1 != y2) {
                 // line 1
@@ -614,13 +612,13 @@ public class DrawingImageView extends ImageView {
 
                 // line 2
                 float m2 = -1 / m1;
-                float c2 = y3 - (m2 * x3);
+                float c2 = y3 - (m2 * x);
 
                 // points of intersection of line 1 and line 2
                 intersectionX = ((c2 - c1) / (m1 - m2));
                 intersectionY = ((m1 * intersectionX) + c1);
             } else if (y1 == y2) {
-                intersectionX = x3;
+                intersectionX = x;
                 intersectionY = y1;
             } else { // x1 == x2
                 intersectionX = x1;
@@ -770,7 +768,7 @@ public class DrawingImageView extends ImageView {
 
     // 0 - RED and 1 - GREEN
     protected int heatmapColorMapper(float heatmapValue) {
-        float hsv[] = {heatmapValue*120, 1f, 1f};
+        float[] hsv = {heatmapValue * 120, 1f, 1f};
         return Color.HSVToColor(hsv);
     }
 
@@ -865,7 +863,7 @@ public class DrawingImageView extends ImageView {
         double maxDistance = 0;
         double minDistance = 0;
 
-        double array[][] = new double[length][height];
+        double[][] array = new double[length][height];
 
         for(int i=0; i<length; i++) {
             for(int j=0; j<height; j++){
