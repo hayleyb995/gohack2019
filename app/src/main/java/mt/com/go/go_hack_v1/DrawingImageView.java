@@ -14,7 +14,6 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -42,12 +41,15 @@ public class DrawingImageView extends ImageView {
 
     private ImageButton readyButton;
     private ImageButton undoButton;
-    private PointF point;
     STATE currentState = STATE.BOUNDARY_BUILDING;
     private Paint paint = new Paint();
     private List<PointF> outline = new ArrayList<>();
     private List<List<PointF>> polygons = new ArrayList<>();
-    private PointF currentPoint;
+
+    private PointF lastPoint;
+    private PointF previousLastPoint;
+    private PointF targetPointLoc;
+
 //
 //    protected int SCREEN_WIDTH = 1200;//this.getWidth();
 //    protected int SCREEN_HEIGHT = 2000;//this.getHeight();
@@ -69,7 +71,7 @@ public class DrawingImageView extends ImageView {
     private static final int THRESHOLD = 100;
 
     double[][] heatMapGlobal;
-    List<AccessPoint> aps = new ArrayList();
+    List<AccessPoint> aps = new ArrayList<>();
 
     public void setHeatMapGlobal(double[][] heatMapGlobal) {
         this.heatMapGlobal = heatMapGlobal;
@@ -96,6 +98,16 @@ public class DrawingImageView extends ImageView {
         paint.setStrokeWidth(5);
     }
 
+    private void updatePreviewState(PointF point) {
+        previousLastPoint = lastPoint;
+        lastPoint = point;
+    }
+
+    private void revertPreviewState() {
+        lastPoint = previousLastPoint;
+        previousLastPoint = null;
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
@@ -119,8 +131,8 @@ public class DrawingImageView extends ImageView {
                 break;
             case WALLS_BUILDING:
 
-                x = Math.round(offsetX + Math.round((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT);
-                y = Math.round(offsetY + Math.round((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT);
+                x = offsetX + (float)Math.floor((float) Math.floor(event.getX()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
+                y = offsetY + (float)Math.floor((float) Math.floor(event.getY()) / CELL_GRANULAR_INCREMENT) * CELL_GRANULAR_INCREMENT;
 
                 // approximate x and y to be on the point collienear to the nearest line
                 PointF intersection2 = getPointOnPolygonOutline(x, y);
@@ -129,135 +141,125 @@ public class DrawingImageView extends ImageView {
                     y = intersection2.y;
                 } else { // still building boundary wall
                 }
-
-
                 break;
         }
 
-        currentPoint = new PointF(x, y);
+        targetPointLoc = new PointF(x, y);
 
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 switch (currentState) {
                     case BOUNDARY_BUILDING:
-                        if (outline.size() == 0) {
-                            point = new PointF(x, y);
-                            outline.add(point);
-                        }
-                        break;
-                    case STABLE:
-                        polygons.add(new ArrayList<>());
-                        if (polygons.size() > 0) {
-                            if (polygons.get(polygons.size() - 1).size() == 0 && (isPointOnPolygonOutline(x, y))) {
-                                point = new PointF(x, y);
-                                polygons.get(polygons.size() - 1).add(point);
-                                currentState = STATE.WALLS_BUILDING;
-                            }
-                        }
-                        break;
-
-
-                }
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                boolean valid = false;
-                switch (currentState) {
-                    case BOUNDARY_BUILDING:
-                        if (outline.size() > 0) {
-                            if (!(outline.size() == 1 && outline.get(0).x == x && outline.get(0).y == y)) {
-                                point = new PointF(x, y);
-                                outline.add(point);
-                            }
-                        }
+                        PointF point = new PointF(x, y);
+                        outline.add(point);
+                        updatePreviewState(point);
                         if (outline.size() > 1) {
                             undoButton.setImageResource(R.drawable.undo);
                             undoButton.setEnabled(true);
                         }
                         break;
                     case STABLE:
+                        polygons.add(new ArrayList<>());
+                        if (isPointOnPolygonOutline(x, y)) {
+                            // we are actually starting a new polygon
+                            PointF startingPoint = new PointF(x, y);
+                            polygons.get(polygons.size() - 1).add(startingPoint);
+                            updatePreviewState(startingPoint);
+
+                            currentState = STATE.WALLS_BUILDING;
+                        } else { // not on boundary
+                            List<PointF> lastPoly = polygons.get(polygons.size() - 1);
+                            if (lastPoly.size() > 0) {
+                                lastPoly.remove(lastPoly.size() - 1);
+                                revertPreviewState();
+                            }
+                        }
                         break;
                     case WALLS_BUILDING:
                         point = new PointF(x, y);
-                        if (polygons.size() > 0) {
-                            List<PointF> lastPolygon = polygons.get(polygons.size() - 1);
-                            if (!(lastPolygon.size() == 1 && lastPolygon.get(0).x == x && lastPolygon.get(0).y == y)) {
-                                polygons.get(polygons.size() - 1).add(new PointF(x, y));
-                            }
-                        }
-                        //polygons.get(polygons.size() - 1).add(point);
+                        polygons.get(polygons.size() - 1).add(point);
+                        updatePreviewState(point);
                         break;
                 }
+
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+
+                targetPointLoc = null;
 
                 switch (currentState) {
                     case BOUNDARY_BUILDING:
-                        if (outline.size() > 1) { // if at least 1 point in boundary wall
-                            PointF last = outline.get(outline.size() - 1);
-                            PointF first = outline.get(0);
-                            if (Math.abs(last.x - first.x) < THRESHOLD && Math.abs(last.y - first.y) < THRESHOLD) {
-                                // snap last point to first point if within THRESHOLD
-                                outline.set(outline.size() - 1, new PointF(first.x, first.y));
 
-                                Toast toast = Toast.makeText(this.getContext(),
-                                        "Outline drawn successfully",
-                                        Toast.LENGTH_SHORT);
-                                toast.show();
+                        PointF point = new PointF(x, y);
+                        outline.add(point);
+                        updatePreviewState(point);
+                        if (outline.size() > 1) {
+                            undoButton.setImageResource(R.drawable.undo);
+                            undoButton.setEnabled(true);
+                        }
 
-                                currentState = STATE.STABLE;
-                                readyButton.setImageResource(R.drawable.forward);
-                                readyButton.setEnabled(true);
+                        PointF last = null;
+                        PointF first = null;
+                        if (outline.size() > 1) { // if at least 2 points in boundary wall
+                            last = outline.get(outline.size() - 1);
+                            first = outline.get(0);
+                        }
+
+                        if (last != null && Math.abs(last.x - first.x) < THRESHOLD && Math.abs(last.y - first.y) < THRESHOLD) {
+                            // snap last point to first point if within THRESHOLD
+                            point = new PointF(first.x, first.y);
+                            outline.set(outline.size() - 1, point);
+                            lastPoint = point;
+
+                            Toast toast = Toast.makeText(this.getContext(),
+                                    "Outline drawn successfully",
+                                    Toast.LENGTH_SHORT);
+                            toast.show();
+
+                            currentState = STATE.STABLE;
+
+                            readyButton.setImageResource(R.drawable.forward);
+                            readyButton.setEnabled(true);
+                        }
+
+
+                        break;
+                    case STABLE:
+                        if (isPointOnPolygonOutline(x, y)) {
+                            // we are actually starting a new polygon
+                            PointF startingPoint = new PointF(x, y);
+                            polygons.get(polygons.size() - 1).add(startingPoint);
+                            updatePreviewState(startingPoint);
+
+                            currentState = STATE.WALLS_BUILDING;
+                        } else { // not on boundary
+                            List<PointF> lastPoly = polygons.get(polygons.size() - 1);
+                            if (lastPoly.size() > 0) {
+                                lastPoly.remove(lastPoly.size() - 1);
+                                revertPreviewState();
                             }
                         }
 
                         break;
-                    case STABLE:
-//                        if (isPointOnPolygonOutline(x, y)) {
-//                            // we are actually starting a new polygon
-//                            PointF startingPoint = new PointF(x, y);
-//
-//                            if (polygons.size() > 0) {
-//                                List<PointF> lastPolygon = polygons.get(polygons.size() - 1);
-//                                if (!(lastPolygon.size() == 1 && lastPolygon.get(0).x == x && lastPolygon.get(0).y == y)) {
-//                                    polygons.get(polygons.size() - 1).add(startingPoint);
-//                                }
-//                            }
-//
-//                            //TODO remove toast?
-////                            Toast toast = Toast.makeText(this.getContext(),
-////                                    "Starting room drawing",
-////                                    Toast.LENGTH_LONG);
-////                            toast.show();
-//                            currentState = STATE.WALLS_BUILDING;
-//                        } else { // not on boundary
-//                            List<PointF> lastPoly = polygons.get(polygons.size() - 1);
-//                            if (lastPoly.size() > 0) {
-//                                lastPoly.remove(lastPoly.size() - 1);
-//                            }
-//                        }
-
-                        break;
                     case WALLS_BUILDING:
-                         if (isPointOnPolygonOutline(x, y)) {
-
-                             //TODO remove toast?
-//                            Toast toast = Toast.makeText(this.getContext(),
-//                                    "Room completed",
-//                                    Toast.LENGTH_LONG);
-//                            toast.show();
+                        if (isPointOnPolygonOutline(x, y)) {
+                            point = new PointF(x, y);
+                            polygons.get(polygons.size() - 1).add(point);
+                            updatePreviewState(point);
                             currentState = STATE.STABLE;
-
                         } else if (isPointInPolygon(x, y)) {
-                             //do nothing
+                            point = new PointF(x, y);
+                            polygons.get(polygons.size() - 1).add(point);
+                            updatePreviewState(point);
                         } else { // if point is outside polygon
                             List<PointF> lastPoly = polygons.get(polygons.size() - 1);
                             lastPoly.remove(lastPoly.size() - 1);
-                            invalidate();
+                            revertPreviewState();
                         }
 
                         break;
                 }
-
-                currentPoint = null;
         }
 
         invalidate();
@@ -268,6 +270,11 @@ public class DrawingImageView extends ImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
+        if (lastPoint != null && targetPointLoc != null && currentState != STATE.STABLE) {
+            paint.setColor(Color.GREEN);
+            canvas.drawLine(lastPoint.x, lastPoint.y, targetPointLoc.x, targetPointLoc.y, paint);
+        }
 
         // paint grid only in state 0
         if (currentState == STATE.BOUNDARY_BUILDING) {
@@ -342,29 +349,7 @@ public class DrawingImageView extends ImageView {
             }
         }
 
-        if (currentPoint != null) {
-            PointF lastPoint = null;
 
-            if (polygons.size() > 0) {
-                for (int i = polygons.size() - 1; i >= 0; i--) {
-                    if (polygons.get(i).size() > 0) {
-                        lastPoint = polygons.get(i).get(polygons.get(i).size() - 1);
-                        break;
-                    }
-                }
-            }
-
-            if (lastPoint == null) {
-                if (outline.size() > 0) {
-                    lastPoint = outline.get(outline.size() - 1);
-                }
-            }
-
-            if (lastPoint != null && currentState != STATE.STABLE) {
-                paint.setColor(Color.GREEN);
-                canvas.drawLine(lastPoint.x, lastPoint.y, currentPoint.x, currentPoint.y, paint);
-            }
-        }
 
         if(currentState == STATE.READY) {
 
@@ -610,57 +595,57 @@ public class DrawingImageView extends ImageView {
     private PointF getPointOnLine(float x, float y, float x1, float y1, float x2, float y2) {
 
 
-            float a = y1 - y2;
-            float b = x2 - x1;
-            float c = ((x1 - x2) * y1) + ((y2 - y1) * x1);
+        float a = y1 - y2;
+        float b = x2 - x1;
+        float c = ((x1 - x2) * y1) + ((y2 - y1) * x1);
 
-            float x3 = x;
-            float y3 = y * (-1);
+        float x3 = x;
+        float y3 = y * (-1);
 
-            float intersectionX;
-            float intersectionY;
+        float intersectionX;
+        float intersectionY;
 
-            if (circleIntersectsLine(a, b, c, x3, y3, 15)) {
-                //find coordinate of interest
-                if (x1 != x2 && y1 != y2) {
-                    // line 1
-                    float m1 = ((y2 - y1) / (x2 - x1));
-                    float c1 = y1 - (m1 * x1);
+        if (circleIntersectsLine(a, b, c, x3, y3, 50)) {
+            //find coordinate of interest
+            if (x1 != x2 && y1 != y2) {
+                // line 1
+                float m1 = ((y2 - y1) / (x2 - x1));
+                float c1 = y1 - (m1 * x1);
 
-                    // line 2
-                    float m2 = -1 / m1;
-                    float c2 = y3 - (m2 * x3);
+                // line 2
+                float m2 = -1 / m1;
+                float c2 = y3 - (m2 * x3);
 
-                    // points of intersection of line 1 and line 2
-                    intersectionX = ((c2 - c1) / (m1 - m2));
-                    intersectionY = ((m1 * intersectionX) + c1);
-                } else if (y1 == y2) {
-                    intersectionX = x3;
-                    intersectionY = y1;
-                } else { // x1 == x2
-                    intersectionX = x1;
-                    intersectionY = y3;
-                }
-
-
-                // confirm that the point is within line's limits
-                float checkX1 = intersectionX-x1;
-                float checkX2 = intersectionX-x2;
-
-                float checkY1 = intersectionY-y1;
-                float checkY2 = intersectionY-y2;
-
-                if(!(
-                        ((checkX1>=0 && checkX2<=0) || (checkX1<=0 && checkX2>=0)) &&
-                        ((checkY1>=0 && checkY2<=0) || (checkY1<=0 && checkY2>=0))
-                )){
-                    return null;
-                }
-
-                intersectionY *= (-1); //verse y mapping;
-
-                return new PointF(intersectionX, intersectionY);
+                // points of intersection of line 1 and line 2
+                intersectionX = ((c2 - c1) / (m1 - m2));
+                intersectionY = ((m1 * intersectionX) + c1);
+            } else if (y1 == y2) {
+                intersectionX = x3;
+                intersectionY = y1;
+            } else { // x1 == x2
+                intersectionX = x1;
+                intersectionY = y3;
             }
+
+
+            // confirm that the point is within line's limits
+            float checkX1 = intersectionX-x1;
+            float checkX2 = intersectionX-x2;
+
+            float checkY1 = intersectionY-y1;
+            float checkY2 = intersectionY-y2;
+
+            if(!(
+                    ((checkX1>=0 && checkX2<=0) || (checkX1<=0 && checkX2>=0)) &&
+                            ((checkY1>=0 && checkY2<=0) || (checkY1<=0 && checkY2>=0))
+            )){
+                return null;
+            }
+
+            intersectionY *= (-1); //verse y mapping;
+
+            return new PointF(intersectionX, intersectionY);
+        }
 
         return null;
     }
@@ -748,6 +733,37 @@ public class DrawingImageView extends ImageView {
                 invalidate();
                 currentState = STATE.BOUNDARY_BUILDING;
             }
+        }
+
+        switch(currentState) {
+            case BOUNDARY_BUILDING:
+                if (!outline.isEmpty()) {
+                    lastPoint = outline.get(outline.size() - 1);
+                }
+                break;
+            case STABLE:
+            case WALLS_BUILDING:
+                boolean updated = false;
+                for (int i = polygons.size(); i > 0; i--) {
+                    List<PointF> polygon = polygons.get(i - 1);
+
+                    if (polygon.isEmpty()) {
+                        continue;
+                    }
+
+                    lastPoint = polygon.get(polygon.size() - 1);
+                    updated = true;
+                }
+
+                if (!updated) {
+                    if (outline.size() > 0) {
+                        lastPoint = outline.get(outline.size() - 1);
+                    } else {
+                        lastPoint = null;
+                    }
+                }
+
+                break;
         }
     }
 
