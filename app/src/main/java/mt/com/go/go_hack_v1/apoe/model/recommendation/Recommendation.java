@@ -2,8 +2,6 @@ package mt.com.go.go_hack_v1.apoe.model.recommendation;
 
 import mt.com.go.go_hack_v1.apoe.model.AccessPoint;
 
-import java.util.List;
-
 public class Recommendation {
 
     private AccessPoint[] accessPoints;
@@ -22,4 +20,11 @@ public class Recommendation {
         return signalStrengthHeatMap;
     }
 
+    public void setAccessPoints(AccessPoint[] accessPoints) {
+        this.accessPoints = accessPoints;
+    }
+
+    public void setSignalStrengthHeatMap(double[][] signalStrengthHeatMap) {
+        this.signalStrengthHeatMap = signalStrengthHeatMap;
+    }
 }

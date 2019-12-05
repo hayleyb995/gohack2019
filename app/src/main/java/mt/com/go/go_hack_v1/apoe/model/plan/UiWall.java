@@ -1,26 +1,22 @@
 package mt.com.go.go_hack_v1.apoe.model.plan;
 
-import android.graphics.PointF;
+public class UiWall extends Wall {
 
-import java.io.Serializable;
+    private Point start;
+    private Point end;
 
-public class UiWall extends Wall implements Serializable {
-
-    private PointF start;
-    private PointF end;
-
-    public UiWall(PointF start, PointF end, Material material, int thickness) {
+    public UiWall(Point start, Point end, Material material, int thickness) {
         super(material, thickness);
 
         this.start = start;
         this.end = end;
     }
 
-    public PointF getStart() {
+    public Point getStart() {
         return start;
     }
 
-    public PointF getEnd() {
+    public Point getEnd() {
         return end;
     }
 

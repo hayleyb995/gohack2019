@@ -30,13 +30,6 @@ import java.util.List;
 import mt.com.go.go_hack_v1.apoe.model.AccessPoint;
 import mt.com.go.go_hack_v1.apoe.model.plan.Material;
 
-enum STATE {
-    BOUNDARY_BUILDING,
-    STABLE,
-    WALLS_BUILDING,
-    READY
-}
-
 public class DrawingImageView extends ImageView {
 
     private ImageButton readyButton;

@@ -1,7 +1,5 @@
 package mt.com.go.go_hack_v1.apoe.model.plan;
 
-import mt.com.go.go_hack_v1.apoe.model.grid.GridPoint;
-
 public class GridWall extends Wall {
 
     private GridPoint gridPointStart;
@@ -17,11 +15,11 @@ public class GridWall extends Wall {
     public GridPoint getGridPointStart() {
         return gridPointStart;
     }
-
+    
     public GridPoint getGridPointEnd() {
         return gridPointEnd;
     }
-
-
+    
+    
 
 }

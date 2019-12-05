@@ -3,33 +3,28 @@ package mt.com.go.go_hack_v1;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
-import android.media.Image;
+import android.graphics.PointF;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
-import mt.com.go.go_hack_v1.apoe.OptimizationEngine;
-import mt.com.go.go_hack_v1.apoe.model.AccessPoint;
+import mt.com.go.go_hack_v1.apoe.ApoeOptimizePlanController;
+import mt.com.go.go_hack_v1.apoe.ApoeService;
 import mt.com.go.go_hack_v1.apoe.model.plan.Material;
+import mt.com.go.go_hack_v1.apoe.model.plan.Point;
 import mt.com.go.go_hack_v1.apoe.model.plan.UiWall;
-import mt.com.go.go_hack_v1.apoe.model.plan.Wall;
 import mt.com.go.go_hack_v1.apoe.model.recommendation.Recommendation;
+import retrofit2.Call;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -117,33 +112,21 @@ public class MainActivity extends AppCompatActivity {
                         toast.show();
                     } else {
 
-                        Wall[] walls = new Wall[polyLines.size()];
+                        UiWall[] walls = new UiWall[polyLines.size()];
 
                         for (int i = 0; i < polyLines.size(); i++) {
                             PolyLine line = polyLines.get(i);
-                            UiWall wall = new UiWall(line.getCoordinates().get(0), line.getCoordinates().get(1), Material.CONCRETE, 1);
+
+                            PointF startingPoint = line.getCoordinates().get(0);
+                            PointF endPoint = line.getCoordinates().get(1);
+
+                            UiWall wall = new UiWall(new Point(startingPoint.x, startingPoint.y) , new Point(endPoint.x, endPoint.y), Material.CONCRETE, 20);
                             walls[i] = wall;
                         }
 
-                        OptimizationEngine engine = new OptimizationEngine(walls);
+                        ApoeOptimizePlanController controller = new ApoeOptimizePlanController(view);
+                        controller.start(walls);
 
-                        Thread thread = new Thread(engine);
-                        thread.start();
-                        try {
-                            thread.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        Recommendation recommendation = engine.recommendation;
-
-
-
-                        view.setHeatMapGlobal( recommendation.getSignalStrengthHeatMap());
-                        view.setAps(Arrays.asList(recommendation.getAccessPoints()));
-
-                        view.setCurrentState(STATE.READY);
-                        view.invalidate();
 //                    Intent mockIntent = new Intent(getApplicationContext(), MockService.class);
 //                    mockIntent.putExtra("Plan", (Serializable) polyLines);
                     }

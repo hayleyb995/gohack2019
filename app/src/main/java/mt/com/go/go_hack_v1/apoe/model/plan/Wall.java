@@ -3,6 +3,8 @@ package mt.com.go.go_hack_v1.apoe.model.plan;
 public abstract class Wall {
 
     private Material material;
+
+    //in CM
     private int thickness;
 
     protected Wall(Material material, int thickness) {
