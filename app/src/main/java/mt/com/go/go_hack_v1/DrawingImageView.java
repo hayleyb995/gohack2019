@@ -363,8 +363,8 @@ public class DrawingImageView extends ImageView {
 
             double[][] heatMap = heatMapGlobal;
 
-            for (int cellX = 0; cellX < heatMap.length - 2; cellX++) {
-                for (int cellY = (240 / 10); cellY < heatMap[cellX].length - 2; cellY++) {
+            for (int cellX = 0; cellX < heatMap.length; cellX++) {
+                for (int cellY = 0; cellY < heatMap[0].length; cellY++) {
 
                     // TODO map dB to linear scale?
                     // dB → gain-multiplier: https://sound.stackexchange.com/questions/38722/convert-db-value-to-linear-scale
@@ -375,14 +375,14 @@ public class DrawingImageView extends ImageView {
                     double index = normalize(heatMap[cellX][cellY]);
                     paintHeatMap.setColor(heatmapColorMapper((float) index));
                     paintHeatMap.setAlpha(128);
-                    canvas.drawRect(cellX * 10, cellY * 10, cellX * 10 + 10, cellY * 10 + 10, paintHeatMap);
+                    canvas.drawRect(cellX * 20, cellY * 20, cellX * 20 + 20, cellY * 20 + 20, paintHeatMap);
                 }
             }
 
 
             for (int i = 0; i < aps.size(); i++) {
                 AccessPoint ap = aps.get(i);
-                drawAP(canvas, ap.getCurrentGridPoint().getRow()*10, ap.getCurrentGridPoint().getColumn()*10, ""+i);
+                drawAP(canvas, ap.getCurrentGridPoint().getRow()*20 + 10, ap.getCurrentGridPoint().getColumn()*20 + 10, ""+i);
             }
 
             //TODO uncomment for mock data

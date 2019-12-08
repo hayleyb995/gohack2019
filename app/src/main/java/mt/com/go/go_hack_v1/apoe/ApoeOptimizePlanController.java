@@ -44,7 +44,7 @@ public class ApoeOptimizePlanController implements Callback<Recommendation> {
     public void onResponse(Call<Recommendation> call, Response<Recommendation> response) {
         Recommendation recommendation = response.body();
 
-        view.setHeatMapGlobal( recommendation.getSignalStrengthHeatMap());
+        view.setHeatMapGlobal(recommendation.getSignalStrengthHeatMap());
         view.setAps(Arrays.asList(recommendation.getAccessPoints()));
 
         view.setCurrentState(STATE.READY);
