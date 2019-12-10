@@ -3,6 +3,7 @@ package mt.com.go.go_hack_v1;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.PointF;
 import android.os.Bundle;
@@ -10,6 +11,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -29,6 +31,10 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 public class MainActivity extends AppCompatActivity {
 
     boolean isMock = false;
+
+
+
+    Activity tempActivity = this;
 
 
     @Override
@@ -81,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
 
         clearButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+                RelativeLayout layout = (RelativeLayout)(tempActivity.findViewById(R.id.lo_header));
+                layout.setVisibility(View.VISIBLE);
                 view.clearView();
                 undoButton.setEnabled(false);
                 readyButton.setEnabled(false);
@@ -124,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
                             walls[i] = wall;
                         }
 
-                        ApoeOptimizePlanController controller = new ApoeOptimizePlanController(view);
+                        ApoeOptimizePlanController controller = new ApoeOptimizePlanController(tempActivity, view);
                         controller.start(walls);
 
 //                    Intent mockIntent = new Intent(getApplicationContext(), MockService.class);
@@ -137,6 +145,8 @@ public class MainActivity extends AppCompatActivity {
 
         undoButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+                RelativeLayout layout = (RelativeLayout)(tempActivity.findViewById(R.id.lo_header));
+                layout.setVisibility(View.VISIBLE);
                 view.undoAction();
             }
         });

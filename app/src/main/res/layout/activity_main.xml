@@ -2,110 +2,138 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:gravity="center"
     tools:context=".MainActivity">
-    <RelativeLayout
-        android:id="@+id/lo_header"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:gravity="center">
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            style="@style/HeaderTextStyle"
-            android:paddingLeft="30dp"
-            android:paddingRight="10dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:gravity="center"
-            android:background="?attr/colorPrimary"
-            android:text="If this template looks OK, tap next to continue" />
-    </RelativeLayout>
 
-    <LinearLayout
-        android:id="@+id/lo_central"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="false"
-        android:gravity="center"
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
         android:orientation="vertical">
 
-        <mt.com.go.go_hack_v1.DrawingImageView
-            android:id="@+id/image"
+        <RelativeLayout
+            android:id="@+id/lo_header"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </LinearLayout>
-    <RelativeLayout
-        android:id="@+id/lo_footer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:gravity="center">
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar1"
-            android:layout_width="411dp"
             android:layout_height="wrap_content"
-            android:background="?attr/colorPrimary"
-            android:minHeight="?attr/actionBarSize"
-            android:theme="?attr/actionBarTheme"
-            tools:layout_editor_absoluteY="675dp">
+            android:layout_alignParentTop="true"
+            android:gravity="center">
 
-            <LinearLayout
+            <TextView
+                android:id="@+id/textView"
+                style="@style/HeaderTextStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:layout_centerVertical="true"
+                android:background="?attr/colorPrimary"
                 android:gravity="center"
-                android:orientation="horizontal">
-                <ImageButton
-                    android:id="@+id/backButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:background="@android:color/transparent"
-                    android:src="@drawable/back" />
+                android:paddingLeft="30dp"
+                android:paddingTop="10dp"
+                android:paddingRight="10dp"
+                android:paddingBottom="10dp"
+                android:text="If this template looks OK, tap next to continue" />
+        </RelativeLayout>
 
-                <ImageButton
-                    android:id="@+id/clearButton"
+        <LinearLayout
+            android:id="@+id/lo_central"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="false"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <mt.com.go.go_hack_v1.DrawingImageView
+                android:id="@+id/image"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/lo_footer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:gravity="center">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/toolbar1"
+                android:layout_width="411dp"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorPrimary"
+                android:minHeight="?attr/actionBarSize"
+                android:theme="?attr/actionBarTheme"
+                tools:layout_editor_absoluteY="675dp">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:layout_weight="1"
-                    android:background="@android:color/transparent"
-                    android:src="@drawable/clear" />
-                <ImageButton
-                    android:id="@+id/undoButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:layout_weight="1"
-                    android:background="@android:color/transparent"
-                    android:src="@drawable/undo" />
-                <ImageButton
-                    android:id="@+id/saveButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:layout_weight="1"
-                    android:background="@android:color/transparent"
-                    android:src="@drawable/save"
-                    android:text="Undo" />
-                <ImageButton
-                    android:id="@+id/readyButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:layout_weight="1"
-                    android:background="@android:color/transparent"
-                    android:src="@drawable/forward"
-                    android:text="Ready" />
-            </LinearLayout>
-        </androidx.appcompat.widget.Toolbar>
+                    android:layout_centerHorizontal="true"
+                    android:layout_centerVertical="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/backButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:src="@drawable/back" />
+
+                    <ImageButton
+                        android:id="@+id/clearButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="10dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:src="@drawable/clear" />
+
+                    <ImageButton
+                        android:id="@+id/undoButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="10dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:src="@drawable/undo" />
+
+                    <ImageButton
+                        android:id="@+id/saveButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="10dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:src="@drawable/save"
+                        android:text="Undo" />
+
+                    <ImageButton
+                        android:id="@+id/readyButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="10dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:src="@drawable/forward"
+                        android:text="Ready" />
+                </LinearLayout>
+            </androidx.appcompat.widget.Toolbar>
+        </RelativeLayout>
+
     </RelativeLayout>
+
+
+    <ProgressBar
+        android:id="@+id/progressBar1"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:visibility="gone" />
 
 </RelativeLayout>

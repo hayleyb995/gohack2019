@@ -15,9 +15,11 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -673,7 +675,7 @@ public class DrawingImageView extends ImageView {
             }
         }
         for (int i = 0; i < polygons.size(); i++) {
-            List<PointF> polygonOutline = polygons.get(0);
+            List<PointF> polygonOutline = polygons.get(i);
             if (polygonOutline.size() > 2) {
                 for (int j = 0; j <= polygonOutline.size() - 2; j++) {
                     PointF startingPoint = new PointF(polygonOutline.get(j).x, polygonOutline.get(j).y);
